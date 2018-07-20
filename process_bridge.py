@@ -29,9 +29,12 @@ if __name__ == "__main__":
     view.show()
     
     processHandler.commandReceived.connect(view.append)
+    objectManager.debugMessage.connect(view.append)
+    objectManager.debugMessage.connect(print)
     processHandler.commandReceived.connect(objectManager.handleCommand)
     processHandler.processFinished.connect(objectManager.handleFinished)
     processHandler.processError.connect(objectManager.handleError)
+    objectManager.messagePending.connect(processHandler.handleOutput)
     
     processThread.start()
     sys.exit(app.exec());

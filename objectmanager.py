@@ -4,6 +4,7 @@ from PyQt5 import QtWidgets
 class ObjectManager(QObject):
 
     messagePending = pyqtSignal(str)
+    debugMessage = pyqtSignal(str)
     
     def __init__(self, parent = None):
     
@@ -34,7 +35,8 @@ class ObjectManager(QObject):
                 self.call_method(args)
         
         except ValueError:
-            print("Invalid arguments for '%s' command: %s" % (cmd, args))
+            self.debugMessage.emit("Invalid arguments for '%s' command: %s" % (
+                                   cmd, args))
             return
     
     def create(self, args):
@@ -43,7 +45,7 @@ class ObjectManager(QObject):
             args, defs = self.parse_arguments(args)[:2]
             class_, name = args
         except KeyError:
-            print("Unknown class '%s'." % class_name)
+            self.debugMessage.emit("Unknown class '%s'." % class_name)
             return
         
         obj = class_()
@@ -55,7 +57,7 @@ class ObjectManager(QObject):
         (obj, method_name), method_args = args[:2], args[2:]
         
         if type(obj) == str:
-            print("Unknown object '%s'." % obj)
+            self.debugMessage.emit("Unknown object '%s'." % obj)
             return
         
         try:
@@ -66,12 +68,14 @@ class ObjectManager(QObject):
             result = method(*tuple(method_args))
             
         except AttributeError:
-            print("Object '%s' has no method '%s'." % (defs[obj], method_name))
+            self.debugMessage.emit("Object '%s' (%s) has no method '%s'." % (
+                                   defs[obj], obj, method_name))
             return
         
         # Send the return value of the method call if it was not None.
         if result != None:
-            self.messagePending.emit("value %s %s %s" % (defs[obj], method_name, result))
+            self.messagePending.emit("value %s %s %s\n" % (
+                defs[obj], method_name, self.typed_value_to_string(result)))
     
     def parse_arguments(self, text):
     
@@ -90,7 +94,7 @@ class ObjectManager(QObject):
                     arg += c
                 elif arg != "":
                     # ...or are separators between arguments.
-                    args.append(self.string_to_type(arg, defs))
+                    args.append(self.string_to_typed_value(arg, defs))
                     arg = ""
             
             elif c == '"':
@@ -119,11 +123,11 @@ class ObjectManager(QObject):
             raise ValueError("Unmatches quotes at end of '%s'." % text)
         
         if arg != "":
-            args.append(self.string_to_type(arg, defs))
+            args.append(self.string_to_typed_value(arg, defs))
         
         return args, defs
     
-    def string_to_type(self, arg, defs):
+    def string_to_typed_value(self, arg, defs):
     
         # Check for data of various types.
         
@@ -167,10 +171,13 @@ class ObjectManager(QObject):
         # Just return a string.
         return arg
     
-    def handleError(self):
+    def typed_value_to_string(self, value):
     
-        QtWidgets.QMessageBox.critical(None, "Qt Bridge",
-            "The application quit unexpectedly.")
+        return str(value)
+    
+    def handleError(self, message):
+    
+        QtWidgets.QMessageBox.critical(None, "Qt Bridge", message)
         QCoreApplication.instance().quit()
     
     def handleFinished(self):
