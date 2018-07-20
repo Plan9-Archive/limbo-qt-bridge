@@ -39,3 +39,7 @@ class ProcessHandler(QObject):
             self.pendingInput = self.pendingInput.mid(newline + 1)
             
             self.commandReceived.emit(command)
+    
+    def handleOutput(self, data):
+    
+        pass
