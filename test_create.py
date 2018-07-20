@@ -11,3 +11,8 @@ if __name__ == "__main__":
     sys.stdout.flush()
     
     time.sleep(3)
+    
+    sys.stdout.write("call window close\n")
+    sys.stdout.flush()
+    
+    time.sleep(1)
