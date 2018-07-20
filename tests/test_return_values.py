@@ -24,9 +24,7 @@ if __name__ == "__main__":
     send("call label show")
     
     width = int(call("label width"))
-    open("/tmp/log.txt", "a").write("%s\n" % width)
     height = int(call("label height"))
-    open("/tmp/log.txt", "a").write("%s\n" % height)
     
     time.sleep(2)
     
