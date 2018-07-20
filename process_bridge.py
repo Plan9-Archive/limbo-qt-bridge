@@ -5,6 +5,7 @@ import sys
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QApplication, QTextBrowser
 
+from objectmanager import ObjectManager
 from processhandler import ProcessHandler
 
 if __name__ == "__main__":
@@ -17,15 +18,20 @@ if __name__ == "__main__":
     
     executable = app.arguments()[1]
     
+    objectManager = ObjectManager()
+    
     processThread = QThread()
     processHandler = ProcessHandler(executable)
     processHandler.moveToThread(processThread)
     processThread.started.connect(processHandler.run)
-    processThread.start()
     
     view = QTextBrowser()
     view.show()
     
     processHandler.commandReceived.connect(view.append)
+    processHandler.commandReceived.connect(objectManager.handleCommand)
+    processHandler.processFinished.connect(objectManager.handleFinished)
+    processHandler.processError.connect(objectManager.handleError)
     
+    processThread.start()
     sys.exit(app.exec());
