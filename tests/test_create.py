@@ -2,17 +2,17 @@
 
 import sys, time
 
+def send(message):
+    sys.stdout.write(message + "\n")
+    sys.stdout.flush()
+
 if __name__ == "__main__":
 
-    sys.stdout.write("create QWidget window\n")
-    sys.stdout.flush()
-    
-    sys.stdout.write("call window show\n")
-    sys.stdout.flush()
+    send("create QWidget window")
+    send("call window show")
     
     time.sleep(3)
     
-    sys.stdout.write("call window close\n")
-    sys.stdout.flush()
+    send("call window close")
     
     time.sleep(1)

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     send('call label setText "Counting"')
     send("call label show")
     
-    i = 10
+    i = 5
     while i > 0:
         send('call label setText "%i"' % i)
         i -= 1

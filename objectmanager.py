@@ -1,8 +1,10 @@
-from PyQt5.QtCore import QCoreApplication, QObject
+from PyQt5.QtCore import QCoreApplication, QObject, pyqtSignal
 from PyQt5 import QtWidgets
 
 class ObjectManager(QObject):
 
+    messagePending = pyqtSignal(str)
+    
     def __init__(self, parent = None):
     
         QObject.__init__(self, parent)
@@ -38,7 +40,8 @@ class ObjectManager(QObject):
     def create(self, args):
     
         try:
-            class_, name = self.parse_arguments(args)[:2]
+            args, defs = self.parse_arguments(args)[:2]
+            class_, name = args
         except KeyError:
             print("Unknown class '%s'." % class_name)
             return
@@ -48,8 +51,8 @@ class ObjectManager(QObject):
     
     def call_method(self, args):
     
-        args = self.parse_arguments(args)
-        (obj, method), method_args = args[:2], args[2:]
+        args, defs = self.parse_arguments(args)
+        (obj, method_name), method_args = args[:2], args[2:]
         
         if type(obj) == str:
             print("Unknown object '%s'." % obj)
@@ -59,14 +62,23 @@ class ObjectManager(QObject):
             # PyQt handles the method resolution but we could use signatures
             # instead of plain method names and look up the specific method
             # using QMetaObject.
-            method = getattr(obj, method)
-            method(*tuple(method_args))
+            method = getattr(obj, method_name)
+            result = method(*tuple(method_args))
+            
         except AttributeError:
-            print("Object %s has no method '%s'." % (obj, method))
+            print("Object '%s' has no method '%s'." % (defs[obj], method_name))
+            return
+        
+        # Send the return value of the method call if it was not None.
+        if result != None:
+            self.messagePending.emit("value %s %s %s" % (defs[obj], method_name, result))
     
     def parse_arguments(self, text):
     
+        # Create an empty list to fill with arguments and a dictionary mapping
+        # classes and objects to their original names in the argument text.
         args = []
+        defs = {}
         in_quote = False
         arg = ""
         n = 0
@@ -78,7 +90,7 @@ class ObjectManager(QObject):
                     arg += c
                 elif arg != "":
                     # ...or are separators between arguments.
-                    args.append(self.string_to_type(arg))
+                    args.append(self.string_to_type(arg, defs))
                     arg = ""
             
             elif c == '"':
@@ -107,11 +119,11 @@ class ObjectManager(QObject):
             raise ValueError("Unmatches quotes at end of '%s'." % text)
         
         if arg != "":
-            args.append(self.string_to_type(arg))
+            args.append(self.string_to_type(arg, defs))
         
-        return args
+        return args, defs
     
-    def string_to_type(self, arg):
+    def string_to_type(self, arg, defs):
     
         # Check for data of various types.
         
@@ -143,9 +155,14 @@ class ObjectManager(QObject):
         
         # The name of an object or class?
         if arg in self.objects:
-            return self.objects[arg]
+            obj = self.objects[arg]
+            defs[obj] = arg
+            return obj
+        
         elif arg in self.classes:
-            return self.classes[arg]
+            class_ = self.classes[arg]
+            defs[class_] = arg
+            return class_
         
         # Just return a string.
         return arg
