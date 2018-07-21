@@ -36,7 +36,7 @@ class ObjectManager(QObject):
         
         except ValueError:
             self.debugMessage.emit("Invalid arguments for '%s' command: %s" % (
-                                   cmd, args))
+                                   cmd, repr(args)))
             return
     
     def create(self, args):
@@ -73,9 +73,8 @@ class ObjectManager(QObject):
             return
         
         # Send the return value of the method call if it was not None.
-        if result != None:
-            self.messagePending.emit("value %s %s %s\n" % (
-                defs[obj], method_name, self.typed_value_to_string(result)))
+        self.messagePending.emit("value %s %s %s\n" % (
+            defs[obj], method_name, self.typed_value_to_string(result)))
     
     def parse_arguments(self, text):
     

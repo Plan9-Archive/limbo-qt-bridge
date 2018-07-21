@@ -1,4 +1,5 @@
-from PyQt5.QtCore import QByteArray, QObject, QProcess, QThread, pyqtSignal
+from PyQt5.QtCore import QCoreApplication, QByteArray, QObject, QProcess, \
+                         QThread, pyqtSignal
 
 class ProcessHandler(QObject):
 
@@ -23,6 +24,14 @@ class ProcessHandler(QObject):
         # On Qt 5.6 and later, we can use the errorOccurred signal instead.
         if not self.process.waitForStarted(-1):
             self.processError.emit("The application quit unexpectedly.")
+    
+    def quit(self):
+    
+        print("Terminating %i" % self.process.processId())
+        self.process.closeReadChannel(QProcess.StandardOutput)
+        self.process.closeReadChannel(QProcess.StandardError)
+        self.process.closeWriteChannel()
+        self.process.terminate()
     
     def handleInput(self):
     

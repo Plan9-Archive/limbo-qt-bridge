@@ -24,6 +24,7 @@ if __name__ == "__main__":
     processHandler = ProcessHandler(executable)
     processHandler.moveToThread(processThread)
     processThread.started.connect(processHandler.run)
+    processThread.finished.connect(processHandler.quit)
     
     view = QTextBrowser()
     view.show()
@@ -31,10 +32,14 @@ if __name__ == "__main__":
     processHandler.commandReceived.connect(view.append)
     objectManager.debugMessage.connect(view.append)
     objectManager.debugMessage.connect(print)
+    
     processHandler.commandReceived.connect(objectManager.handleCommand)
     processHandler.processFinished.connect(objectManager.handleFinished)
     processHandler.processError.connect(objectManager.handleError)
     objectManager.messagePending.connect(processHandler.handleOutput)
+    
+    # Ensure that the process thread is stopped before exiting.
+    app.aboutToQuit.connect(processThread.quit)
     
     processThread.start()
     sys.exit(app.exec());
