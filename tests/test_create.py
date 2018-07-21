@@ -9,10 +9,10 @@ def send(message):
 if __name__ == "__main__":
 
     send("create QWidget window")
-    send("call window show")
+    send("call 2 window show")
     
     time.sleep(3)
     
-    send("call window close")
+    send("call 3 window close")
     
     time.sleep(1)
