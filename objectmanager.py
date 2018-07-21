@@ -41,6 +41,7 @@ class ObjectManager(QObject):
     
     def create(self, args):
     
+        # create <id> <type> <name>
         try:
             args, defs = self.parse_arguments(args)[:2]
             class_, name = args
@@ -53,8 +54,9 @@ class ObjectManager(QObject):
     
     def call_method(self, args):
     
+        # call <id> <object> <method> <args>...
         args, defs = self.parse_arguments(args)
-        (obj, method_name), method_args = args[:2], args[2:]
+        (id_, obj, method_name), method_args = args[:3], args[3:]
         
         if type(obj) == str:
             self.debugMessage.emit("Unknown object '%s'." % obj)
@@ -73,8 +75,8 @@ class ObjectManager(QObject):
             return
         
         # Send the return value of the method call if it was not None.
-        self.messagePending.emit("value %s %s %s\n" % (
-            defs[obj], method_name, self.typed_value_to_string(result)))
+        self.messagePending.emit("value %i %s\n" % (
+            id_, self.typed_value_to_string(result)))
     
     def parse_arguments(self, text):
     

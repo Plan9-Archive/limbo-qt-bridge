@@ -13,23 +13,23 @@ def receive(expecting):
             return line[len(expecting):].strip()
 
 def call(message):
-    send("call " + message)
-    return receive("value " + message)
+    send("call 3 " + message)
+    return receive("value 3 ")
 
 
 if __name__ == "__main__":
 
     send("create QLabel label")
-    send('call label setText "Hello World!"')
-    send("call label show")
+    send('call 1 label setText "Hello World!"')
+    send("call 2 label show")
     
     width = int(call("label width"))
     height = int(call("label height"))
     
     time.sleep(2)
     
-    send("call label resize %i %i" % (width * 2, height * 4))
+    send("call 4 label resize %i %i" % (width * 2, height * 4))
     
     time.sleep(2)
     
-    send("call label close")
+    send("call 5 label close")

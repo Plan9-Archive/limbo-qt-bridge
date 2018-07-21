@@ -9,15 +9,15 @@ def send(message):
 if __name__ == "__main__":
 
     send("create QLabel label")
-    send('call label setText "Counting"')
-    send("call label show")
+    send('call 1 label setText "Counting"')
+    send("call 2 label show")
     
     i = 5
     while i > 0:
-        send('call label setText "%i"' % i)
+        send('call 3 label setText "%i"' % i)
         i -= 1
         time.sleep(1)
     
-    send("call label close")
+    send("call 4 label close")
     
     time.sleep(1)
