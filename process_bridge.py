@@ -24,7 +24,6 @@ if __name__ == "__main__":
     processHandler = ProcessHandler(executable)
     processHandler.moveToThread(processThread)
     processThread.started.connect(processHandler.run)
-    processThread.finished.connect(processHandler.quit)
     
     view = QTextBrowser()
     view.show()
@@ -38,8 +37,11 @@ if __name__ == "__main__":
     processHandler.processError.connect(objectManager.handleError)
     objectManager.messagePending.connect(processHandler.handleOutput)
     
-    # Ensure that the process thread is stopped before exiting.
-    app.aboutToQuit.connect(processThread.quit)
+    # Manage application exit carefully by monitoring when the last window is
+    # closed. In theory, the process handler and its thread should not have
+    # been deleted at this point.
+    app.setQuitOnLastWindowClosed(False)
+    app.lastWindowClosed.connect(processHandler.quit)
     
     processThread.start()
     sys.exit(app.exec());
