@@ -19,6 +19,7 @@ class ObjectManager(QObject):
                 pass
         
         self.objects = {}
+        self.counter = 0
     
     def handleCommand(self, command):
     
@@ -35,6 +36,8 @@ class ObjectManager(QObject):
                 result = self.create(args, defs)
             elif cmd == "call":
                 result = self.call_method(args, defs)
+            elif cmd == "call_keep":
+                result = self.call_method(args, defs, keep_result = True)
             else:
                 return
         
@@ -66,7 +69,7 @@ class ObjectManager(QObject):
         except:
             return None
     
-    def call_method(self, args, defs):
+    def call_method(self, args, defs, keep_result = False):
     
         # call <id> <object> <method> <args>...
         (id_, obj, method_name), method_args = args[:3], args[3:]
@@ -80,8 +83,16 @@ class ObjectManager(QObject):
             # instead of plain method names and look up the specific method
             # using QMetaObject.
             method = getattr(obj, method_name)
-            return method(*tuple(method_args))
+            value = method(*tuple(method_args))
             
+            if keep_result:
+                name = "%s_%i_rv" % (value.__class__.__name__, self.counter)
+                self.objects[name] = value
+                self.counter = (self.counter + 1) & 0xffffffff
+                return name
+            
+            return value
+        
         except AttributeError:
             self.debugMessage.emit("Object '%s' (%s) has no method '%s'." % (
                                    defs[obj], obj, method_name))

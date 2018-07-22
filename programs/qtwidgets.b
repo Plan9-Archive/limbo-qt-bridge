@@ -47,7 +47,7 @@ Proxy.init(class: string, args: list of string): ref Proxy
 {
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
-    name := sys->sprint("obj%x", counter);
+    name := sys->sprint("%s_%x", class, counter);
     channels.request("create", name, class, args);
     counter = (counter + 1) & 16r0fffffff;
 
@@ -57,6 +57,11 @@ Proxy.init(class: string, args: list of string): ref Proxy
 Proxy.call(p: self ref Proxy, method: string, args: list of string): string
 {
     return channels.request("call", p.name, method, args);
+}
+
+Proxy.call_keep(p: self ref Proxy, method: string, args: list of string): string
+{
+    return channels.request("call_keep", p.name, method, args);
 }
 
 
@@ -74,4 +79,33 @@ QWidget.close(w: self ref QWidget)
 QWidget.show(w: self ref QWidget)
 {
     w.proxy.call("show", nil);
+}
+
+QMainWindow.init(args: list of string): ref QMainWindow
+{
+    proxy := Proxy.init("QMainWindow", args);
+    return ref QMainWindow(proxy);
+}
+
+QMainWindow.close(w: self ref QMainWindow)
+{
+    w.proxy.call("close", nil);
+}
+
+QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
+{
+    # Ensure that the return value is registered.
+    value := w.proxy.call_keep("menuBar", nil);
+    return ref QMenuBar(ref Proxy(value));
+}
+
+QMainWindow.show(w: self ref QMainWindow)
+{
+    w.proxy.call("show", nil);
+}
+
+QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
+{
+    value := w.proxy.call("addMenu", title::nil);
+    return ref QAction(ref Proxy(value));
 }

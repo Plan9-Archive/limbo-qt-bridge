@@ -17,6 +17,11 @@ QtWidgets: module
 
         init: fn(class: string, args: list of string): ref Proxy;
         call: fn(w: self ref Proxy, method: string, args: list of string): string;
+        call_keep: fn(w: self ref Proxy, method: string, args: list of string): string;
+    };
+
+    QAction: adt {
+        proxy: ref Proxy;
     };
 
     QWidget: adt {
@@ -25,5 +30,20 @@ QtWidgets: module
         init: fn(args: list of string): ref QWidget;
         close: fn(w: self ref QWidget);
         show: fn(w: self ref QWidget);
+    };
+
+    QMainWindow: adt {
+        proxy: ref Proxy;
+
+        init: fn(args: list of string): ref QMainWindow;
+        close: fn(w: self ref QMainWindow);
+        menuBar: fn(w: self ref QMainWindow): ref QMenuBar;
+        show: fn(w: self ref QMainWindow);
+    };
+
+    QMenuBar: adt {
+        proxy: ref Proxy;
+
+        addMenu: fn(w: self ref QMenuBar, title: string): ref QAction;
     };
 };
