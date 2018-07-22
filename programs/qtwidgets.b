@@ -24,12 +24,18 @@
 
 implement QtWidgets;
 
+include "sys.m";
+    sys: Sys;
+
 include "qtwidgets.m";
 
 init()
 {
     qtchannels = load QtChannels "/dis/lib/qtchannels.dis";
+    sys = load Sys Sys->PATH;
+
     channels = Channels.init();
+    counter = 0;
 }
 
 get_channels(): ref Channels
@@ -37,9 +43,14 @@ get_channels(): ref Channels
     return channels;
 }
 
-Widget.init(name, class: string, args: list of string): ref Widget
+Widget.init(class: string, args: list of string): ref Widget
 {
+    # Refer to the object using something that won't be reduced to an integer
+    # because the Qt bridge uses a dictionary mapping strings to objects.
+    name := sys->sprint("obj%x", counter);
     channels.request("create", name, class, args);
+    counter = (counter + 1) & 16r0fffffff;
+
     return ref Widget(name);
 }
 
@@ -48,4 +59,12 @@ Widget.call(w: self ref Widget, method: string, args: list of string): string
     return channels.request("call", w.name, method, args);
 }
 
+Widget.close(w: self ref Widget)
+{
+    channels.request("call", w.name, "close", nil);
+}
 
+Widget.show(w: self ref Widget)
+{
+    channels.request("call", w.name, "show", nil);
+}

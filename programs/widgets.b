@@ -19,6 +19,7 @@ implement Widgets;
 include "sys.m";
     sys: Sys;
     fprint, print, sprint: import sys;
+
 include "draw.m";
 
 include "qtwidgets.m";
@@ -40,14 +41,12 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     qt->init();
 
-    widget := Widget.init("window", "QLabel", nil);
-    widget.call("setText", "\"Hello world!\""::nil);
-    widget.call("show", nil);
-    width := int widget.call("width", nil);
-    height := int widget.call("height", nil);
-    w := sprint("%d", width * 2);
-    h := sprint("%d", height * 4);
-    widget.call("resize", list of {w, h});
+    widget := Widget.init("QCalendarWidget", nil);
+    widget.show();
+
+    sys->sleep(5000);
+
+    widget.close();
 
     read_ch := qt->get_channels().read_ch;
 
