@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    Widget: import qt;
+    QWidget: import qt;
 
 Widgets: module
 {
@@ -41,9 +41,7 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     qt->init();
 
-    window := Widget.init("QMainWindow", nil);
-    textArea := Widget.init("QTextEdit", nil);
-    window.call("setCentralWidget", textArea.name::nil);
+    window := QWidget.init(nil);
     window.show();
 
     read_ch := qt->get_channels().read_ch;

@@ -43,7 +43,7 @@ get_channels(): ref Channels
     return channels;
 }
 
-Widget.init(class: string, args: list of string): ref Widget
+Proxy.init(class: string, args: list of string): ref Proxy
 {
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
@@ -51,20 +51,27 @@ Widget.init(class: string, args: list of string): ref Widget
     channels.request("create", name, class, args);
     counter = (counter + 1) & 16r0fffffff;
 
-    return ref Widget(name);
+    return ref Proxy(name);
 }
 
-Widget.call(w: self ref Widget, method: string, args: list of string): string
+Proxy.call(p: self ref Proxy, method: string, args: list of string): string
 {
-    return channels.request("call", w.name, method, args);
+    return channels.request("call", p.name, method, args);
 }
 
-Widget.close(w: self ref Widget)
+
+QWidget.init(args: list of string): ref QWidget
 {
-    w.call("close", nil);
+    proxy := Proxy.init("QWidget", args);
+    return ref QWidget(proxy);
 }
 
-Widget.show(w: self ref Widget)
+QWidget.close(w: self ref QWidget)
 {
-    w.call("show", nil);
+    w.proxy.call("close", nil);
+}
+
+QWidget.show(w: self ref QWidget)
+{
+    w.proxy.call("show", nil);
 }
