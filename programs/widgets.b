@@ -21,36 +21,14 @@ include "sys.m";
     fprint, print, sprint: import sys;
 include "draw.m";
 
-include "qtchannels.m";
-    qt: QtChannels;
-    Channels: import qt;
+include "qtwidgets.m";
+    qt: QtWidgets;
+    Widget: import qt;
 
 Widgets: module
 {
     init: fn(ctxt: ref Draw->Context, args: list of string);
 };
-
-# Define an data type to represent a widget.
-
-Widget: adt {
-    name: string;
-
-    init: fn(class, name: string, args: list of string): ref Widget;
-    call: fn(w: self ref Widget, method: string, args: list of string): string;
-};
-
-Widget.init(name, class: string, args: list of string): ref Widget
-{
-    channels.request("create", name, class, args);
-    return ref Widget(name);
-}
-
-Widget.call(w: self ref Widget, method: string, args: list of string): string
-{
-    return channels.request("call", w.name, method, args);
-}
-
-channels : ref Channels;
 
 # Main function and stream handling functions
 
@@ -58,9 +36,9 @@ init(ctxt: ref Draw->Context, args: list of string)
 {
     # Load instances of modules, one local to init, the other global.
     sys = load Sys Sys->PATH;
-    qt = load QtChannels "/dis/lib/qtchannels.dis";
+    qt = load QtWidgets QtWidgets->PATH;
 
-    channels = Channels.init();
+    qt->init();
 
     widget := Widget.init("window", "QLabel", nil);
     widget.call("setText", "\"Hello world!\""::nil);
@@ -71,8 +49,6 @@ init(ctxt: ref Draw->Context, args: list of string)
     h := sprint("%d", height * 4);
     widget.call("resize", list of {w, h});
 
-    for (;;) alt {
-        s := <- channels.read_ch =>
-            ; #sys->print("default: %s\n", s);
+    for (;;) {
     }
 }
