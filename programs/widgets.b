@@ -49,6 +49,10 @@ init(ctxt: ref Draw->Context, args: list of string)
     h := sprint("%d", height * 4);
     widget.call("resize", list of {w, h});
 
-    for (;;) {
+    read_ch := qt->get_channels().read_ch;
+
+    for (;;) alt {
+        s := <- read_ch =>
+            sys->print("default: %s\n", s);
     }
 }

@@ -1,6 +1,12 @@
+include "qtchannels.m";
+    qtchannels: QtChannels;
+    Channels: import qtchannels;
+
 QtWidgets: module
 {
     PATH: con "/dis/lib/qtwidgets.dis";
+
+    channels : ref Channels;
 
     Widget: adt {
         name: string;
@@ -10,4 +16,5 @@ QtWidgets: module
     };
 
     init: fn();
+    get_channels: fn(): ref Channels;
 };

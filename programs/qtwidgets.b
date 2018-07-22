@@ -24,18 +24,17 @@
 
 implement QtWidgets;
 
-include "qtchannels.m";
-    qtchannels: QtChannels;
-    Channels: import qtchannels;
-
 include "qtwidgets.m";
-
-channels : ref Channels;
 
 init()
 {
     qtchannels = load QtChannels "/dis/lib/qtchannels.dis";
     channels = Channels.init();
+}
+
+get_channels(): ref Channels
+{
+    return channels;
 }
 
 Widget.init(name, class: string, args: list of string): ref Widget
