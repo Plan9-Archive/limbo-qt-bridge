@@ -8,7 +8,7 @@ def send(message):
 
 if __name__ == "__main__":
 
-    send("create QWidget window")
+    send("create 1 window QWidget")
     send("call 2 window show")
     
     time.sleep(3)

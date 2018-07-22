@@ -16,6 +16,8 @@ class ProcessHandler(QObject):
     
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.handleInput)
+        self.process.setReadChannel(QProcess.StandardOutput)
+        self.process.closeReadChannel(QProcess.StandardError)
         self.process.finished.connect(self.processFinished)
         self.pendingInput = QByteArray()
         self.pendingOutput = QByteArray()

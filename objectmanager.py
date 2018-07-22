@@ -27,35 +27,48 @@ class ObjectManager(QObject):
             return
         
         cmd, args = command[:space].rstrip(), command[space + 1:]
+        args, defs = self.parse_arguments(args)
+        id_ = args[0]
         
         try:
             if cmd == "create":
-                self.create(args)
+                result = self.create(args, defs)
             elif cmd == "call":
-                self.call_method(args)
+                result = self.call_method(args, defs)
+            else:
+                return
         
         except ValueError:
             self.debugMessage.emit("Invalid arguments for '%s' command: %s" % (
                                    cmd, repr(args)))
             return
+        
+        # Send the return value of the method call.
+        self.messagePending.emit("value %i %s\n" % (
+            id_, self.typed_value_to_string(result)))
+        self.debugMessage.emit("value %i %s\n" % (
+            id_, self.typed_value_to_string(result)))
     
-    def create(self, args):
+    def create(self, args, defs):
     
         # create <id> <type> <name>
         try:
-            args, defs = self.parse_arguments(args)[:2]
-            class_, name = args
+            (id_, name, class_), method_args = args[:3], args[3:]
+        
         except KeyError:
             self.debugMessage.emit("Unknown class '%s'." % class_name)
             return
         
-        obj = class_()
-        self.objects[name] = obj
+        try:
+            obj = class_(*tuple(method_args))
+            self.objects[name] = obj
+            return name
+        except:
+            return None
     
-    def call_method(self, args):
+    def call_method(self, args, defs):
     
         # call <id> <object> <method> <args>...
-        args, defs = self.parse_arguments(args)
         (id_, obj, method_name), method_args = args[:3], args[3:]
         
         if type(obj) == str:
@@ -67,16 +80,12 @@ class ObjectManager(QObject):
             # instead of plain method names and look up the specific method
             # using QMetaObject.
             method = getattr(obj, method_name)
-            result = method(*tuple(method_args))
+            return method(*tuple(method_args))
             
         except AttributeError:
             self.debugMessage.emit("Object '%s' (%s) has no method '%s'." % (
                                    defs[obj], obj, method_name))
-            return
-        
-        # Send the return value of the method call if it was not None.
-        self.messagePending.emit("value %i %s\n" % (
-            id_, self.typed_value_to_string(result)))
+            return None
     
     def parse_arguments(self, text):
     

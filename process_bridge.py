@@ -28,9 +28,14 @@ if __name__ == "__main__":
     view = QTextBrowser()
     view.show()
     
-    processHandler.commandReceived.connect(view.append)
-    objectManager.debugMessage.connect(view.append)
-    objectManager.debugMessage.connect(print)
+    def input_text(s):
+        view.append("<i>input: </i>%s" % s)
+    
+    def output_text(s):
+        view.append("<b>output: </b>%s\n" % s)
+    
+    processHandler.commandReceived.connect(input_text)
+    objectManager.debugMessage.connect(output_text)
     
     processHandler.commandReceived.connect(objectManager.handleCommand)
     processHandler.processFinished.connect(objectManager.handleFinished)

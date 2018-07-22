@@ -18,7 +18,7 @@ implement Widgets;
 
 include "sys.m";
     sys: Sys;
-    sprint: import sys;
+    fprint, print, sprint: import sys;
 include "draw.m";
 include "string.m";
     str: String;
@@ -39,9 +39,10 @@ Channels: adt {
 
     init: fn(): ref Channels;
     get: fn(c: self ref Channels): (int, chan of string);
-    reader: fn(read_ch: chan of string);
-    writer: fn(write_ch: chan of string);
-    call: fn(c: self ref Channels, name, method: string, args: list of string): string;
+    reader: fn(c: self ref Channels);
+    writer: fn(c: self ref Channels);
+    request: fn(c: self ref Channels, action, name, method: string,
+                args: list of string): string;
 };
 
 Channels.init(): ref Channels
@@ -53,15 +54,15 @@ Channels.init(): ref Channels
     c := ref Channels(0, response_hash, read_ch, write_ch);
 
     # Spawn a reader and a writer to handle input and output in the background.
-    spawn c.reader(c.read_ch);
-    spawn c.writer(c.write_ch);
+    spawn c.reader();
+    spawn c.writer();
 
     return c;
 }
 
 Channels.get(c: self ref Channels): (int, chan of string)
 {
-    # Creates a new channel and registers it with the 
+    # Creates a new channel and registers it in the hash table.
     response_ch := chan of string;
     c.counter = (c.counter + 1) % 1024;
     c.response_hash.add(c.counter, response_ch);
@@ -69,7 +70,7 @@ Channels.get(c: self ref Channels): (int, chan of string)
     return (c.counter, response_ch);
 }
 
-Channels.reader(read_ch: chan of string)
+Channels.reader(c: self ref Channels)
 {
     stdin := sys->fildes(0);
     read_array := array[256] of byte;
@@ -107,36 +108,37 @@ Channels.reader(read_ch: chan of string)
         }
 
         # Send the command via the default read channel.
-        read_ch <-= value_str;
+        c.read_ch <-= value_str;
     }
 }
 
-Channels.writer(write_ch: chan of string)
+Channels.writer(c: self ref Channels)
 {
     stdout := sys->fildes(1);
 
     for (;;) {
 
         # Convert each string from the write channel to a byte array.
-        s := <- write_ch;
+        s := <- c.write_ch;
         write_array := array of byte s;
 
         # Write the entire array to stdout.
         available := len write_array;
         if (sys->write(stdout, write_array, available) != available) {
-            sys->fprint(sys->fildes(2), "Write error.\n");
+            fprint(sys->fildes(2), "Write error.\n");
             exit;
         }
     }
 }
 
-Channels.call(c: self ref Channels, name, method: string, args: list of string): string
+Channels.request(c: self ref Channels, action, name, method: string,
+                 args: list of string): string
 {
     # Obtain a channel to use to receive a response.
     (key, response_ch) := c.get();
-    
+
     # Send the call request and receive the response.
-    message := sprint("call %d %s %s", key, name, method);
+    message := sprint("%s %d %s %s", action, key, name, method);
     for (; args != nil; args = tl args)
         message += " " + hd args;
 
@@ -156,19 +158,19 @@ channels : ref Channels;
 Widget: adt {
     name: string;
 
-    init: fn(class, name: string): ref Widget;
+    init: fn(class, name: string, args: list of string): ref Widget;
     call: fn(w: self ref Widget, method: string, args: list of string): string;
 };
 
-Widget.init(class, name: string): ref Widget
+Widget.init(name, class: string, args: list of string): ref Widget
 {
-    channels.write_ch <-= sprint("create %s %s\n", class, name);
+    channels.request("create", name, class, args);
     return ref Widget(name);
 }
 
 Widget.call(w: self ref Widget, method: string, args: list of string): string
 {
-    return channels.call(w.name, method, args);
+    return channels.request("call", w.name, method, args);
 }
 
 # Main function and stream handling functions
@@ -180,16 +182,24 @@ init(ctxt: ref Draw->Context, args: list of string)
     str = load String String->PATH;
     tables = load Tables Tables->PATH;
 
+    # Enable raw mode so that characters written to stdin are not automatically
+    # echoed back to stdout without us seeing them.
+    f := sys->open("/dev/consctl", sys->OWRITE);
+    sys->write(f, array of byte "rawon\n", 6);
+
     channels = Channels.init();
 
-    widget := Widget.init("QLabel", "window");
+    widget := Widget.init("window", "QLabel", nil);
     widget.call("setText", "\"Hello world!\""::nil);
     widget.call("show", nil);
     width := int widget.call("width", nil);
-    sys->print("%d\n", width);
+    height := int widget.call("height", nil);
+    w := sprint("%d", width * 2);
+    h := sprint("%d", height * 4);
+    widget.call("resize", list of {w, h});
 
     for (;;) alt {
         s := <- channels.read_ch =>
-            sys->print("default: %s\n", s);
+            ; #sys->print("default: %s\n", s);
     }
 }

@@ -8,7 +8,7 @@ def send(message):
 
 if __name__ == "__main__":
 
-    send("create QLabel label")
+    send("create 0 label QLabel")
     send('call 1 label setText "Counting"')
     send("call 2 label show")
     
