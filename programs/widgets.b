@@ -41,12 +41,10 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     qt->init();
 
-    widget := Widget.init("QCalendarWidget", nil);
-    widget.show();
-
-    sys->sleep(5000);
-
-    widget.close();
+    window := Widget.init("QMainWindow", nil);
+    textArea := Widget.init("QTextEdit", nil);
+    window.call("setCentralWidget", textArea.name::nil);
+    window.show();
 
     read_ch := qt->get_channels().read_ch;
 

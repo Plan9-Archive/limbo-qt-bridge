@@ -61,10 +61,10 @@ Widget.call(w: self ref Widget, method: string, args: list of string): string
 
 Widget.close(w: self ref Widget)
 {
-    channels.request("call", w.name, "close", nil);
+    w.call("close", nil);
 }
 
 Widget.show(w: self ref Widget)
 {
-    channels.request("call", w.name, "show", nil);
+    w.call("show", nil);
 }

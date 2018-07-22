@@ -31,6 +31,8 @@ include "sys.m";
 
 include "qtchannels.m";
 
+consctl : ref sys->FD;
+
 Channels.init(): ref Channels
 {
     sys = load Sys Sys->PATH;
@@ -39,8 +41,8 @@ Channels.init(): ref Channels
     
     # Enable raw mode so that characters written to stdin are not automatically
     # echoed back to stdout without us seeing them.
-    f := sys->open("/dev/consctl", sys->OWRITE);
-    sys->write(f, array of byte "rawon\n", 6);
+    consctl = sys->open("/dev/consctl", sys->OWRITE);
+    sys->write(consctl, array of byte "rawon\n", 6);
 
     response_hash := Table[chan of string].new(7, nil);
     read_ch := chan of string;
