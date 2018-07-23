@@ -23,6 +23,12 @@ class ObjectManager(QObject):
     
     def handleCommand(self, command):
     
+        # create <id> <name> <type>
+        # forget <id> <name>
+        # call <id> <object> <method> <args>...
+        # call_keep <id> <object> <method> <args>...
+        # connect <id> <src> <signal>
+        
         space = command.find(" ")
         if space == -1:
             return
@@ -34,10 +40,14 @@ class ObjectManager(QObject):
         try:
             if cmd == "create":
                 result = self.create(args, defs)
+            elif cmd == "create":
+                result = self.forget(args, defs)
             elif cmd == "call":
                 result = self.call_method(args, defs)
             elif cmd == "call_keep":
                 result = self.call_method(args, defs, keep_result = True)
+            elif cmd == "connect":
+                result = self.connect(args, defs)
             else:
                 return
         
@@ -54,13 +64,7 @@ class ObjectManager(QObject):
     
     def create(self, args, defs):
     
-        # create <id> <type> <name>
-        try:
-            (id_, name, class_), method_args = args[:3], args[3:]
-        
-        except KeyError:
-            self.debugMessage.emit("Unknown class '%s'." % class_name)
-            return
+        (id_, name, class_), method_args = args[:3], args[3:]
         
         try:
             obj = class_(*tuple(method_args))
@@ -69,9 +73,17 @@ class ObjectManager(QObject):
         except:
             return None
     
+    def forget(self, args, defs):
+    
+        id_, name = args[:2]
+        
+        try:
+            del self.objects[name]
+        except:
+            return None
+    
     def call_method(self, args, defs, keep_result = False):
     
-        # call <id> <object> <method> <args>...
         (id_, obj, method_name), method_args = args[:3], args[3:]
         
         if type(obj) == str:
@@ -97,6 +109,19 @@ class ObjectManager(QObject):
             self.debugMessage.emit("Object '%s' (%s) has no method '%s'." % (
                                    defs[obj], obj, method_name))
             return None
+    
+    def connect(self, args, defs):
+    
+        id_, src, signal = args[:5]
+        
+        try:
+            sig = getattr(src, signal)
+            sig.connect(self.dispatchSignal)
+        
+        except AttributeError:
+            self.debugMessage.emit("No such signal '%s.%s'." % (src.__class__.__name__, signal))
+        
+        return None
     
     def parse_arguments(self, text):
     
@@ -204,3 +229,7 @@ class ObjectManager(QObject):
     def handleFinished(self):
     
         QCoreApplication.instance().quit()
+    
+    def dispatchSignal(self, *args):
+    
+        print(args)

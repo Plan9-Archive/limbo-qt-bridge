@@ -16,14 +16,22 @@ QtWidgets: module
     call: fn(proxy, method: string, args: list of string): string;
     call_keep: fn(proxy, method: string, args: list of string): string;
 
+    connect: fn[T,U](src_proxy: T, signal: string, dest_proxy: U, slot: string)
+        for { T => _get_proxy: fn(w: self T):string;
+              U => _invoke: fn(); };
+
     QAction: adt {
         proxy: string;
+
+        _get_proxy: fn(w: self ref QAction): string;
     };
 
     QApplication: adt {
         proxy: string;
 
         init: fn(args: list of string): ref QApplication;
+        quit: fn(w: self ref QApplication);
+        _invoke: fn();
     };
 
     QMainWindow: adt {

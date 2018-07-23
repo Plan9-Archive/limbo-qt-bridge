@@ -49,21 +49,29 @@ create(class: string, args: list of string): string
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
     proxy := sys->sprint("%s_%x", class, counter);
-    channels.request("create", proxy, class, args);
+    channels.request("create", proxy::class::args);
     counter = (counter + 1) & 16r0fffffff;
 
     return proxy;
 }
 
+forget(proxy: string)
+{
+    channels.request("forget", proxy::proxy::nil);
+    counter = (counter + 1) & 16r0fffffff;
+}
+
 call(proxy, method: string, args: list of string): string
 {
-    return channels.request("call", proxy, method, args);
+    return channels.request("call", proxy::method::args);
 }
 
 call_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request("call_keep", proxy, method, args);
+    return channels.request("call_keep", proxy::method::args);
 }
+
+# Utility functions
 
 quote(s: string): string
 {
@@ -75,10 +83,36 @@ unquote(s: string): string
     return s[1:len(s) - 1];
 }
 
+# Proxy classes
+
+connect[T, U](src_proxy: T, signal: string, dest_proxy: U, slot: string)
+    for { T => _get_proxy: fn(w: self T):string;
+          U => _invoke: fn(); }
+{
+    proxy := src_proxy._get_proxy();
+    channels.request("connect", proxy::signal::nil);
+    ### Register the destination proxy and slot.
+}
+
+
+QAction._get_proxy(w: self ref QAction): string
+{
+    return w.proxy;
+}
+
 QApplication.init(args: list of string): ref QApplication
 {
     proxy := call_keep("QApplication", "instance", nil);
     return ref(QApplication(proxy));
+}
+
+QApplication.quit(w: self ref QApplication)
+{
+    call(w.proxy, "quit", nil);
+}
+
+QApplication._invoke()
+{
 }
 
 QMainWindow.init(args: list of string): ref QMainWindow

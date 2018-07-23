@@ -128,14 +128,13 @@ Channels.writer(c: self ref Channels)
     }
 }
 
-Channels.request(c: self ref Channels, action, name, method: string,
-                 args: list of string): string
+Channels.request(c: self ref Channels, action: string, args: list of string): string
 {
     # Obtain a channel to use to receive a response.
     (key, response_ch) := c.get();
 
     # Send the call request and receive the response.
-    message := sprint("%s %d %s %s", action, key, name, method);
+    message := sprint("%s %d", action, key);
     for (; args != nil; args = tl args)
         message += " " + hd args;
 
