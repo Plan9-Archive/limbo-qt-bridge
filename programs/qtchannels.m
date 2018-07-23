@@ -1,6 +1,6 @@
 include "tables.m";
     tables: Tables;
-    Table: import tables;
+    Strhash, Table: import tables;
 
 QtChannels: module
 {

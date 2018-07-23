@@ -112,11 +112,18 @@ class ObjectManager(QObject):
     
     def connect(self, args, defs):
     
-        id_, src, signal = args[:5]
+        id_, src, signal_name = args[:5]
         
         try:
-            sig = getattr(src, signal)
-            sig.connect(self.dispatchSignal)
+            signal = getattr(src, signal_name)
+            
+            # We could connect the signal to a newly created callable but this
+            # might be difficult to reproduce if we wanted to reimplement this
+            # in C++, so instead we create a receiver object to relay the
+            # signal.
+            receiver = SignalReceiver(defs[src], signal_name, self)
+            self.debugMessage.emit("Connecting %s.%s" % (defs[src], signal_name))
+            signal.connect(receiver.dispatch)
         
         except AttributeError:
             self.debugMessage.emit("No such signal '%s.%s'." % (src.__class__.__name__, signal))
@@ -232,4 +239,21 @@ class ObjectManager(QObject):
     
     def dispatchSignal(self, *args):
     
-        print(args)
+        # Find the name of the sender.
+        serialised_args = map(self.typed_value_to_string, args)
+        self.messagePending.emit("signal 0 " + " ".join(serialised_args) + "\n")
+
+
+class SignalReceiver(QObject):
+
+    def __init__(self, src_name, signal_name, objectManager):
+    
+        QObject.__init__(self, objectManager)
+        
+        self.src_name = src_name
+        self.signal = signal_name
+        self.objectManager = objectManager
+    
+    def dispatch(self, *args):
+    
+        self.objectManager.dispatchSignal(*args)

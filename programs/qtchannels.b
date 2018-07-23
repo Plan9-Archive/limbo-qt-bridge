@@ -61,10 +61,14 @@ Channels.get(c: self ref Channels): (int, chan of string)
 {
     # Creates a new channel and registers it in the hash table.
     response_ch := chan of string;
-    c.counter = (c.counter + 1) % 1024;
-    c.response_hash.add(c.counter, response_ch);
 
-    return (c.counter, response_ch);
+    c.counter = (c.counter + 1) % 1024;
+    
+    # Internally, the identifier 0 is reserved for general communication, so
+    # use values from 1 to 1024 for other messages.
+    c.response_hash.add(c.counter + 1, response_ch);
+
+    return (c.counter + 1, response_ch);
 }
 
 Channels.reader(c: self ref Channels)

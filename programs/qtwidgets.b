@@ -34,9 +34,11 @@ init()
 {
     qtchannels = load QtChannels "/dis/lib/qtchannels.dis";
     sys = load Sys Sys->PATH;
+    tables = load Tables Tables->PATH;
 
     channels = Channels.init();
-    counter = 0;
+    widget_counter = 0;
+    signal_hash := Strhash[chan of string].new(23, nil);
 }
 
 get_channels(): ref Channels
@@ -48,9 +50,9 @@ create(class: string, args: list of string): string
 {
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
-    proxy := sys->sprint("%s_%x", class, counter);
+    proxy := sys->sprint("%s_%x", class, widget_counter);
     channels.request("create", proxy::class::args);
-    counter = (counter + 1) & 16r0fffffff;
+    widget_counter = (widget_counter + 1) & 16r0fffffff;
 
     return proxy;
 }
@@ -58,7 +60,7 @@ create(class: string, args: list of string): string
 forget(proxy: string)
 {
     channels.request("forget", proxy::proxy::nil);
-    counter = (counter + 1) & 16r0fffffff;
+    widget_counter = (widget_counter + 1) & 16r0fffffff;
 }
 
 call(proxy, method: string, args: list of string): string
@@ -91,7 +93,9 @@ connect[T, U](src_proxy: T, signal: string, dest_proxy: U, slot: string)
 {
     proxy := src_proxy._get_proxy();
     channels.request("connect", proxy::signal::nil);
+
     ### Register the destination proxy and slot.
+    #signal_hash.add(proxy + " " + signal, slot);
 }
 
 

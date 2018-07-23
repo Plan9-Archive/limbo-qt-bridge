@@ -7,7 +7,8 @@ QtWidgets: module
     PATH: con "/dis/lib/qtwidgets.dis";
 
     channels : ref Channels;
-    counter : int;
+    widget_counter : int;
+    signal_hash : ref Strhash[chan of string];
 
     init: fn();
     get_channels: fn(): ref Channels;
