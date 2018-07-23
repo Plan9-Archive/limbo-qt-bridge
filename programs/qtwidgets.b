@@ -43,69 +43,75 @@ get_channels(): ref Channels
     return channels;
 }
 
-Proxy.init(class: string, args: list of string): ref Proxy
+create(class: string, args: list of string): string
 {
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
-    name := sys->sprint("%s_%x", class, counter);
-    channels.request("create", name, class, args);
+    proxy := sys->sprint("%s_%x", class, counter);
+    channels.request("create", proxy, class, args);
     counter = (counter + 1) & 16r0fffffff;
 
-    return ref Proxy(name);
+    return proxy;
 }
 
-Proxy.call(p: self ref Proxy, method: string, args: list of string): string
+call(proxy, method: string, args: list of string): string
 {
-    return channels.request("call", p.name, method, args);
+    return channels.request("call", proxy, method, args);
 }
 
-Proxy.call_keep(p: self ref Proxy, method: string, args: list of string): string
+call_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request("call_keep", p.name, method, args);
+    return channels.request("call_keep", proxy, method, args);
 }
 
-
-QWidget.init(args: list of string): ref QWidget
-{
-    proxy := Proxy.init("QWidget", args);
-    return ref QWidget(proxy);
-}
-
-QWidget.close(w: self ref QWidget)
-{
-    w.proxy.call("close", nil);
-}
-
-QWidget.show(w: self ref QWidget)
-{
-    w.proxy.call("show", nil);
-}
 
 QMainWindow.init(args: list of string): ref QMainWindow
 {
-    proxy := Proxy.init("QMainWindow", args);
+    proxy := create("QMainWindow", args);
     return ref QMainWindow(proxy);
 }
 
 QMainWindow.close(w: self ref QMainWindow)
 {
-    w.proxy.call("close", nil);
+    call(w.proxy, "close", nil);
 }
 
 QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
 {
     # Ensure that the return value is registered.
-    value := w.proxy.call_keep("menuBar", nil);
-    return ref QMenuBar(ref Proxy(value));
+    value := call_keep(w.proxy, "menuBar", nil);
+    return ref QMenuBar(value);
 }
 
 QMainWindow.show(w: self ref QMainWindow)
 {
-    w.proxy.call("show", nil);
+    call(w.proxy, "show", nil);
+}
+
+QMenu.addAction(w: self ref QMenu, text: string): ref QAction
+{
+    value := call_keep(w.proxy, "addAction", text::nil);
+    return ref QAction(value);
 }
 
 QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
 {
-    value := w.proxy.call("addMenu", title::nil);
-    return ref QAction(ref Proxy(value));
+    value := call_keep(w.proxy, "addMenu", title::nil);
+    return ref QMenu(value);
+}
+
+QWidget.init(args: list of string): ref QWidget
+{
+    proxy := create("QWidget", args);
+    return ref QWidget(proxy);
+}
+
+QWidget.close(w: self ref QWidget)
+{
+    call(w.proxy, "close", nil);
+}
+
+QWidget.show(w: self ref QWidget)
+{
+    call(w.proxy, "show", nil);
 }

@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QMainWindow, QMenuBar: import qt;
+    QMainWindow, QMenu, QMenuBar: import qt;
 
 Widgets: module
 {
@@ -43,7 +43,8 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     window := QMainWindow.init(nil);
     menuBar := window.menuBar();
-    menuBar.addMenu("&File");
+    menu := menuBar.addMenu("&File");
+    menu.addAction("E&xit");
     window.show();
 
     read_ch := qt->get_channels().read_ch;

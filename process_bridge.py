@@ -28,11 +28,14 @@ if __name__ == "__main__":
     view = QTextBrowser()
     view.show()
     
+    def html(s):
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    
     def input_text(s):
-        view.append("<i>input: </i>%s" % s)
+        view.append("<i>input: </i>%s" % html(s))
     
     def output_text(s):
-        view.append("<b>output: </b>%s\n" % s)
+        view.append("<b>output: </b>%s\n" % html(s))
     
     processHandler.commandReceived.connect(input_text)
     objectManager.debugMessage.connect(output_text)
