@@ -20,12 +20,19 @@ QtWidgets: module
         proxy: string;
     };
 
+    QApplication: adt {
+        proxy: string;
+
+        init: fn(args: list of string): ref QApplication;
+    };
+
     QMainWindow: adt {
         proxy: string;
 
         init: fn(args: list of string): ref QMainWindow;
         close: fn(w: self ref QMainWindow);
         menuBar: fn(w: self ref QMainWindow): ref QMenuBar;
+        setTitle: fn(w: self ref QMainWindow, title: string);
         show: fn(w: self ref QMainWindow);
     };
 

@@ -26,6 +26,7 @@ implement QtWidgets;
 
 include "sys.m";
     sys: Sys;
+    sprint: import sys;
 
 include "qtwidgets.m";
 
@@ -64,6 +65,21 @@ call_keep(proxy, method: string, args: list of string): string
     return channels.request("call_keep", proxy, method, args);
 }
 
+quote(s: string): string
+{
+    return sprint("\"%s\"", s);
+}
+
+unquote(s: string): string
+{
+    return s[1:len(s) - 1];
+}
+
+QApplication.init(args: list of string): ref QApplication
+{
+    proxy := call_keep("QApplication", "instance", nil);
+    return ref(QApplication(proxy));
+}
 
 QMainWindow.init(args: list of string): ref QMainWindow
 {
@@ -83,6 +99,11 @@ QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
     return ref QMenuBar(value);
 }
 
+QMainWindow.setTitle(w: self ref QMainWindow, title: string)
+{
+    call(w.proxy, "setWindowTitle", quote(title)::nil);
+}
+
 QMainWindow.show(w: self ref QMainWindow)
 {
     call(w.proxy, "show", nil);
@@ -90,13 +111,13 @@ QMainWindow.show(w: self ref QMainWindow)
 
 QMenu.addAction(w: self ref QMenu, text: string): ref QAction
 {
-    value := call_keep(w.proxy, "addAction", text::nil);
+    value := call_keep(w.proxy, "addAction", quote(text)::nil);
     return ref QAction(value);
 }
 
 QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
 {
-    value := call_keep(w.proxy, "addMenu", title::nil);
+    value := call_keep(w.proxy, "addMenu", quote(title)::nil);
     return ref QMenu(value);
 }
 

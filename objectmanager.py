@@ -141,7 +141,7 @@ class ObjectManager(QObject):
             n += 1
         
         if in_quote:
-            raise ValueError("Unmatches quotes at end of '%s'." % text)
+            raise ValueError("Unmatched quotes at end of '%s'." % text)
         
         if arg != "":
             args.append(self.string_to_typed_value(arg, defs))

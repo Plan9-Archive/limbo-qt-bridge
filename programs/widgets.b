@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QMainWindow, QMenu, QMenuBar: import qt;
+    QApplication, QMainWindow, QMenu, QMenuBar: import qt;
 
 Widgets: module
 {
@@ -40,6 +40,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
+    app := QApplication.init(nil);
 
     window := QMainWindow.init(nil);
     menuBar := window.menuBar();
