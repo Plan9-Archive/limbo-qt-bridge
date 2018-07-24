@@ -44,7 +44,7 @@ init()
     tr_counter = 0;
 
     # Keep a record of signal-slot connections.
-    signal_hash = Strhash[Invokable].new(23, nil);
+    signal_hash = Strhash[list of Invokable].new(23, nil);
 
     # Register a channel with the communication object that will be used to
     # receive notifications about signals.
@@ -106,7 +106,13 @@ connect[T](src: T, signal: string, slot: Invokable)
 
     ### Register the destination proxy and slot.
     sys->print("signal_hash.add: %x %s %s %x\n", signal_hash, proxy, signal, slot);
-    signal_hash.add(proxy + " " + signal, slot);
+    l := signal_hash.find(proxy + " " + signal);
+    if (l == nil)
+        l = list of { slot };
+    else
+        l = slot::l;
+
+    signal_hash.add(proxy + " " + signal, l);
     sys->print("signal_hash.added: %x %s %s %x\n", signal_hash, proxy, signal, slot);
 }
 
@@ -114,18 +120,21 @@ dispatcher(signal_ch: chan of string)
 {
     for (;;) alt {
         s := <- signal_ch =>
-            # Split the key from the signal arguments.
+            # Split the key (the first two words in the reply) from the signal
+            # arguments (the rest).
             n := 0;
             for (i := 0; i < len s && n < 2; i++) {
                 if (s[i:i+1] == " ")
                     n += 1;
             }
             key := s[:i - 1];
-            slot := signal_hash.find(key);
-            sys->print("received: %s %x\n", key, slot);
 
-            if (slot != nil)
-                slot(str->unquoted(s[i:]));
+            # Find the list of slots in the hash and call each of them with the
+            # list of arguments.
+            slots := signal_hash.find(key);
+
+            for (; slots != nil; slots = tl slots)
+                (hd slots)(str->unquoted(s[i:]));
     }
 }
 

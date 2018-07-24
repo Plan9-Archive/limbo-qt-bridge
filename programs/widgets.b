@@ -47,6 +47,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     menu := menuBar.addMenu("&File");
     action := menu.addAction("E&xit");
     connect(action, "triggered", handle_quit);
+    connect(action, "triggered", handle_quit2);
     window.show();
 
     read_ch := qt->get_channels().read_ch;
@@ -60,4 +61,9 @@ init(ctxt: ref Draw->Context, args: list of string)
 handle_quit(args: list of string)
 {
     sys->print("Quit here.\n");
+}
+
+handle_quit2(args: list of string)
+{
+    sys->print("Quit also.\n");
 }

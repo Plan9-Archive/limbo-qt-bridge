@@ -14,7 +14,7 @@ QtWidgets: module
     tr_counter : int;
 
     Invokable: type ref fn(args: list of string);
-    signal_hash : ref Strhash[Invokable];
+    signal_hash : ref Strhash[list of Invokable];
 
     init: fn();
     get_channels: fn(): ref Channels;
