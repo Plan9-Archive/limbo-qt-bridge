@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QAction, QMainWindow, QMenu, QMenuBar, connect: import qt;
+    QApplication, QAction, QMainWindow, QMenu, QMenuBar, connect, Invokable: import qt;
 
 Widgets: module
 {
@@ -46,13 +46,17 @@ init(ctxt: ref Draw->Context, args: list of string)
     menuBar := window.menuBar();
     menu := menuBar.addMenu("&File");
     action := menu.addAction("E&xit");
-    connect(action, "triggered", app, "quit");
+    connect(action, "triggered", handle_quit);
     window.show();
 
     read_ch := qt->get_channels().read_ch;
 
     for (;;) alt {
         s := <- read_ch =>
-            sys->print("default: %s\n", s);
+            sys->print("unhandled: %s\n", s);
     }
+}
+
+handle_quit(args: list of string)
+{
 }

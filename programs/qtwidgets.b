@@ -37,8 +37,17 @@ init()
     tables = load Tables Tables->PATH;
 
     channels = Channels.init();
-    widget_counter = 0;
-    signal_hash := Strhash[chan of string].new(23, nil);
+    tr_counter = 0;
+
+    # Keep a record of signal-slot connections.
+    signal_hash = Strhash[Invokable].new(23, nil);
+
+    # Register a channel with the communication object that will be used to
+    # receive notifications about signals.
+    signal_ch := chan of string;
+    channels.response_hash.add(0, signal_ch);
+
+    spawn dispatcher(signal_ch);
 }
 
 get_channels(): ref Channels
@@ -50,9 +59,9 @@ create(class: string, args: list of string): string
 {
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
-    proxy := sys->sprint("%s_%x", class, widget_counter);
+    proxy := sys->sprint("%s_%x", class, tr_counter);
     channels.request("create", proxy::class::args);
-    widget_counter = (widget_counter + 1) & 16r0fffffff;
+    tr_counter = (tr_counter + 1) & 16r0fffffff;
 
     return proxy;
 }
@@ -60,7 +69,7 @@ create(class: string, args: list of string): string
 forget(proxy: string)
 {
     channels.request("forget", proxy::proxy::nil);
-    widget_counter = (widget_counter + 1) & 16r0fffffff;
+    tr_counter = (tr_counter + 1) & 16r0fffffff;
 }
 
 call(proxy, method: string, args: list of string): string
@@ -85,18 +94,27 @@ unquote(s: string): string
     return s[1:len(s) - 1];
 }
 
-# Proxy classes
-
-connect[T, U](src_proxy: T, signal: string, dest_proxy: U, slot: string)
-    for { T => _get_proxy: fn(w: self T):string;
-          U => _invoke: fn(); }
+connect[T](src: T, signal: string, slot: Invokable)
+    for { T => _get_proxy: fn(w: self T):string; }
 {
-    proxy := src_proxy._get_proxy();
+    proxy := src._get_proxy();
     channels.request("connect", proxy::signal::nil);
 
     ### Register the destination proxy and slot.
-    #signal_hash.add(proxy + " " + signal, slot);
+    sys->print("signal_hash.add: %x %s %s %x\n", signal_hash, proxy, signal, slot);
+    signal_hash.add(proxy + " " + signal, slot);
+    sys->print("signal_hash.added: %x %s %s %x\n", signal_hash, proxy, signal, slot);
 }
+
+dispatcher(signal_ch: chan of string)
+{
+    for (;;) alt {
+        s := <- signal_ch =>
+        sys->print("received: %s\n", s);
+    }
+}
+
+# Proxy classes
 
 
 QAction._get_proxy(w: self ref QAction): string
@@ -115,7 +133,7 @@ QApplication.quit(w: self ref QApplication)
     call(w.proxy, "quit", nil);
 }
 
-QApplication._invoke()
+QApplication.quit_slot(w: ref QApplication, args: list of string)
 {
 }
 

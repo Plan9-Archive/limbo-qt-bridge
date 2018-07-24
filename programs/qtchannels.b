@@ -80,14 +80,23 @@ Channels.reader(c: self ref Channels)
 
     for (;;) {
 
+        #sys->print("Reading...\n");
         # Read as much as possible from stdin.
         read := sys->read(stdin, read_array, 256);
         # Convert the input to a string and append it to the current string.
         current += string read_array[:read];
+        #sys->print("Read %d bytes\n", read);
 
         # Split the current text at the first newline, obtaining the next
         # command string.
-        (value_str, current) = str->splitl(current, "\n");
+        (value_str, current) = str->splitstrl(current, "\n");
+        #sys->print("'%s' '%s'\n", value_str, current);
+
+        # If there was no newline then put the  keep reading.
+        if (current == nil) {
+            current = value_str;
+            continue;
+        }
 
         if (len current > 0)
             current = current[1:];

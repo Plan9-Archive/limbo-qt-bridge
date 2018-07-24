@@ -6,9 +6,15 @@ QtWidgets: module
 {
     PATH: con "/dis/lib/qtwidgets.dis";
 
+    # Handles communication with the bridge.
     channels : ref Channels;
-    widget_counter : int;
-    signal_hash : ref Strhash[chan of string];
+
+    # The transaction counter issues single-use identifiers for requests and
+    # responses.
+    tr_counter : int;
+
+    Invokable: type ref fn(args: list of string);
+    signal_hash : ref Strhash[Invokable];
 
     init: fn();
     get_channels: fn(): ref Channels;
@@ -17,9 +23,10 @@ QtWidgets: module
     call: fn(proxy, method: string, args: list of string): string;
     call_keep: fn(proxy, method: string, args: list of string): string;
 
-    connect: fn[T,U](src_proxy: T, signal: string, dest_proxy: U, slot: string)
-        for { T => _get_proxy: fn(w: self T):string;
-              U => _invoke: fn(); };
+    connect: fn[T](src: T, signal: string, slot: Invokable)
+        for { T => _get_proxy: fn(w: self T):string; };
+
+    dispatcher: fn(signal_ch: chan of string);
 
     QAction: adt {
         proxy: string;
@@ -32,7 +39,7 @@ QtWidgets: module
 
         init: fn(args: list of string): ref QApplication;
         quit: fn(w: self ref QApplication);
-        _invoke: fn();
+        quit_slot: fn(w: ref QApplication, args: list of string);
     };
 
     QMainWindow: adt {

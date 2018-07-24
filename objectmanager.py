@@ -237,11 +237,12 @@ class ObjectManager(QObject):
     
         QCoreApplication.instance().quit()
     
-    def dispatchSignal(self, *args):
+    def dispatchSignal(self, src_name, signal_name, args):
     
         # Find the name of the sender.
         serialised_args = map(self.typed_value_to_string, args)
-        self.messagePending.emit("signal 0 " + " ".join(serialised_args) + "\n")
+        self.messagePending.emit("signal 0 %s %s" % (src_name, signal_name) + \
+            " " + " ".join(serialised_args) + "\n")
 
 
 class SignalReceiver(QObject):
@@ -256,4 +257,4 @@ class SignalReceiver(QObject):
     
     def dispatch(self, *args):
     
-        self.objectManager.dispatchSignal(*args)
+        self.objectManager.dispatchSignal(self.src_name, self.signal, args)
