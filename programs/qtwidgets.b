@@ -145,7 +145,7 @@ QAction._get_proxy(w: self ref QAction): string
     return w.proxy;
 }
 
-QApplication.init(args: list of string): ref QApplication
+QApplication.init(): ref QApplication
 {
     proxy := call_keep("QApplication", "instance", nil);
     return ref(QApplication(proxy));
@@ -168,15 +168,15 @@ QMainWindow._get_proxy(w: self ref QMainWindow): string
     return w.proxy;
 }
 
-QMainWindow.init(args: list of string): ref QMainWindow
+QMainWindow.init(): ref QMainWindow
 {
-    proxy := create("QMainWindow", args);
+    proxy := create("QMainWindow", nil);
     return ref QMainWindow(proxy);
 }
 
 QMainWindow.close(w: self ref QMainWindow)
 {
-    call(w.proxy, "close", nil);
+    QWidget._close(w.proxy);
 }
 
 QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
@@ -191,9 +191,15 @@ QMainWindow.resize(w: self ref QMainWindow, width, height: int)
     QWidget._resize(w.proxy, width, height);
 }
 
+QMainWindow.setCentralWidget[T](w: self ref QMainWindow, widget: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "setCentralWidget", widget._get_proxy()::nil);
+}
+
 QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
 {
-    call(w.proxy, "setWindowTitle", quote(title)::nil);
+    QWidget._setWindowTitle(w.proxy, title);
 }
 
 QMainWindow.show(w: self ref QMainWindow)
@@ -213,20 +219,46 @@ QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
     return ref QMenu(value);
 }
 
+QTextEdit._get_proxy(w: self ref QTextEdit): string
+{
+    return w.proxy;
+}
+
+QTextEdit.init(): ref QTextEdit
+{
+    proxy := create("QTextEdit", nil);
+    return ref QTextEdit(proxy);
+}
+
+QTextEdit.setText(w: self ref QTextEdit, text: string)
+{
+    call(w.proxy, "setText", text::nil);
+}
+
+QWidget._close(proxy: string)
+{
+    call(proxy, "close", nil);
+}
+
 QWidget._resize(proxy: string, width, height: int)
 {
     call(proxy, "resize", (string width)::(string height)::nil);
 }
 
-QWidget.init(args: list of string): ref QWidget
+QWidget._setWindowTitle(proxy, title: string)
 {
-    proxy := create("QWidget", args);
+    call(proxy, "setWindowTitle", quote(title)::nil);
+}
+
+QWidget.init(): ref QWidget
+{
+    proxy := create("QWidget", nil);
     return ref QWidget(proxy);
 }
 
 QWidget.close(w: self ref QWidget)
 {
-    call(w.proxy, "close", nil);
+    QWidget._close(w.proxy);
 }
 
 QWidget.resize(w: self ref QWidget, width, height: int)

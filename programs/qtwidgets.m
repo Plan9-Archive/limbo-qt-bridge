@@ -36,7 +36,7 @@ QtWidgets: module
     QApplication: adt {
         proxy: string;
 
-        init: fn(args: list of string): ref QApplication;
+        init: fn(): ref QApplication;
         quit: fn(w: self ref QApplication);
     };
 
@@ -51,10 +51,12 @@ QtWidgets: module
         proxy: string;
         _get_proxy: fn(w: self ref QMainWindow): string;
 
-        init: fn(args: list of string): ref QMainWindow;
+        init: fn(): ref QMainWindow;
         close: fn(w: self ref QMainWindow);
         menuBar: fn(w: self ref QMainWindow): ref QMenuBar;
         resize: fn(w: self ref QMainWindow, width, height: int);
+        setCentralWidget: fn[T](w: self ref QMainWindow, widget: T)
+            for { T => _get_proxy: fn(w: self T): string; };
         setWindowTitle: fn(w: self ref QMainWindow, title: string);
         show: fn(w: self ref QMainWindow);
     };
@@ -71,12 +73,24 @@ QtWidgets: module
         addMenu: fn(w: self ref QMenuBar, title: string): ref QMenu;
     };
 
+    QTextEdit: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QTextEdit): string;
+
+        init: fn(): ref QTextEdit;
+        setText: fn(w: self ref QTextEdit, text: string);
+    };
+
     QWidget: adt {
         proxy: string;
 
+        # These methods originate in QWidget, so provide internal convenience
+        # functions for calling them.
+        _close: fn(proxy: string);
         _resize: fn(proxy: string, width, height: int);
+        _setWindowTitle: fn(proxy, title: string);
 
-        init: fn(args: list of string): ref QWidget;
+        init: fn(): ref QWidget;
         close: fn(w: self ref QWidget);
         resize: fn(w: self ref QWidget, width, height: int);
         show: fn(w: self ref QWidget);

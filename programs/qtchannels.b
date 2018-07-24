@@ -87,6 +87,8 @@ Channels.reader(c: self ref Channels)
         current += string read_array[:read];
         #sys->print("Read %d bytes\n", read);
 
+        ### Handle multiple commands as well as end of file.
+
         # Split the current text at the first newline, obtaining the next
         # command string.
         (value_str, current) = str->splitstrl(current, "\n");

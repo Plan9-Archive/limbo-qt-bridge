@@ -22,10 +22,13 @@ include "sys.m";
 
 include "draw.m";
 
+include "string.m";
+    str: String;
+
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QAction, QFileDialog, QMainWindow, QMenu, QMenuBar: import qt;
-    connect, Invokable: import qt;
+    QTextEdit, connect, Invokable: import qt;
 
 Widgets: module
 {
@@ -36,25 +39,32 @@ Widgets: module
 
 app : ref QApplication;
 window : ref QMainWindow;
+editor : ref QTextEdit;
 
 init(ctxt: ref Draw->Context, args: list of string)
 {
     # Load instances of modules, one local to init, the other global.
     sys = load Sys Sys->PATH;
+    str = load String String->PATH;
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
-    app = QApplication.init(nil);
+    app = QApplication.init();
 
-    window = QMainWindow.init(nil);
-    window.resize(800, 600);
+    window = QMainWindow.init();
+
     menuBar := window.menuBar();
     menu := menuBar.addMenu("&File");
     openAction := menu.addAction("&Open");
     exitAction := menu.addAction("E&xit");
     connect(openAction, "triggered", handle_open);
     connect(exitAction, "triggered", handle_exit);
+
+    editor = QTextEdit.init();
+    window.setCentralWidget(editor);
+
     window.setWindowTitle("Limbo to Qt Bridge Demonstration");
+    window.resize(800, 600);
     window.show();
 
     read_ch := qt->get_channels().read_ch;
@@ -67,7 +77,7 @@ init(ctxt: ref Draw->Context, args: list of string)
 
 handle_exit(args: list of string)
 {
-    app.quit();
+    window.close();
 }
 
 handle_open(args: list of string)
@@ -75,5 +85,24 @@ handle_open(args: list of string)
     value := QFileDialog.getOpenFileName(window, "Open File", "", "*.txt");
     file_name := hd value;
     filter := hd (tl value);
-    sys->print("file name: %s, filter: %s\n", file_name, filter);
+
+    if (file_name == nil)
+        return;
+
+    (nil, file_name) = str->splitstrr(file_name, "/");
+
+    f := sys->open(file_name, sys->OREAD);
+    if (f == nil)
+        return;
+
+    s := "";
+    b := array[1024] of byte;
+    n : int;
+    do {
+        n = sys->readn(f, b, 1024);
+        s += string b;
+    } while (n > 0);
+
+    editor.setText(s);
+    window.setWindowTitle(file_name + " - Limbo to Qt Bridge Demonstration");
 }
