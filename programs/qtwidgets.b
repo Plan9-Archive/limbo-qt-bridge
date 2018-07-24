@@ -28,6 +28,9 @@ include "sys.m";
     sys: Sys;
     sprint: import sys;
 
+include "string.m";
+    str: String;
+
 include "qtwidgets.m";
 
 init()
@@ -35,6 +38,7 @@ init()
     qtchannels = load QtChannels "/dis/lib/qtchannels.dis";
     sys = load Sys Sys->PATH;
     tables = load Tables Tables->PATH;
+    str = load String String->PATH;
 
     channels = Channels.init();
     tr_counter = 0;
@@ -110,7 +114,18 @@ dispatcher(signal_ch: chan of string)
 {
     for (;;) alt {
         s := <- signal_ch =>
-        sys->print("received: %s\n", s);
+            # Split the key from the signal arguments.
+            n := 0;
+            for (i := 0; i < len s && n < 2; i++) {
+                if (s[i:i+1] == " ")
+                    n += 1;
+            }
+            key := s[:i - 1];
+            slot := signal_hash.find(key);
+            sys->print("received: %s %x\n", key, slot);
+
+            if (slot != nil)
+                slot(str->unquoted(s[i:]));
     }
 }
 

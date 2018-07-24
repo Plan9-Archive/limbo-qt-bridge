@@ -92,7 +92,8 @@ Channels.reader(c: self ref Channels)
         (value_str, current) = str->splitstrl(current, "\n");
         #sys->print("'%s' '%s'\n", value_str, current);
 
-        # If there was no newline then put the  keep reading.
+        # If there was no newline then put the value string back in the current
+        # string and keep reading.
         if (current == nil) {
             current = value_str;
             continue;
@@ -100,6 +101,8 @@ Channels.reader(c: self ref Channels)
 
         if (len current > 0)
             current = current[1:];
+
+        # The value string does not contain a trailing newline.
 
         # Remove the first word from the value string ("value"), extract the
         # second (the identifier) and return the rest as a value.

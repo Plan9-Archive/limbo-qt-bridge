@@ -59,4 +59,5 @@ init(ctxt: ref Draw->Context, args: list of string)
 
 handle_quit(args: list of string)
 {
+    sys->print("Quit here.\n");
 }
