@@ -24,7 +24,8 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QAction, QMainWindow, QMenu, QMenuBar, connect, Invokable: import qt;
+    QApplication, QAction, QFileDialog, QMainWindow, QMenu, QMenuBar: import qt;
+    connect, Invokable: import qt;
 
 Widgets: module
 {
@@ -33,6 +34,9 @@ Widgets: module
 
 # Main function and stream handling functions
 
+app : ref QApplication;
+window : ref QMainWindow;
+
 init(ctxt: ref Draw->Context, args: list of string)
 {
     # Load instances of modules, one local to init, the other global.
@@ -40,14 +44,17 @@ init(ctxt: ref Draw->Context, args: list of string)
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
-    app := QApplication.init(nil);
+    app = QApplication.init(nil);
 
-    window := QMainWindow.init(nil);
+    window = QMainWindow.init(nil);
+    window.resize(800, 600);
     menuBar := window.menuBar();
     menu := menuBar.addMenu("&File");
-    action := menu.addAction("E&xit");
-    connect(action, "triggered", handle_quit);
-    connect(action, "triggered", handle_quit2);
+    openAction := menu.addAction("&Open");
+    exitAction := menu.addAction("E&xit");
+    connect(openAction, "triggered", handle_open);
+    connect(exitAction, "triggered", handle_exit);
+    window.setWindowTitle("Limbo to Qt Bridge Demonstration");
     window.show();
 
     read_ch := qt->get_channels().read_ch;
@@ -58,12 +65,15 @@ init(ctxt: ref Draw->Context, args: list of string)
     }
 }
 
-handle_quit(args: list of string)
+handle_exit(args: list of string)
 {
-    sys->print("Quit here.\n");
+    app.quit();
 }
 
-handle_quit2(args: list of string)
+handle_open(args: list of string)
 {
-    sys->print("Quit also.\n");
+    value := QFileDialog.getOpenFileName(window, "Open File", "", "*.txt");
+    file_name := hd value;
+    filter := hd (tl value);
+    sys->print("file name: %s, filter: %s\n", file_name, filter);
 }

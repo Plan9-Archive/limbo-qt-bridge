@@ -98,14 +98,15 @@ unquote(s: string): string
     return s[1:len(s) - 1];
 }
 
+# Signal-slot connection and dispatch
+
 connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T):string; }
 {
     proxy := src._get_proxy();
     channels.request("connect", proxy::signal::nil);
 
-    ### Register the destination proxy and slot.
-    sys->print("signal_hash.add: %x %s %s %x\n", signal_hash, proxy, signal, slot);
+    # Register the destination slot.
     l := signal_hash.find(proxy + " " + signal);
     if (l == nil)
         l = list of { slot };
@@ -113,7 +114,6 @@ connect[T](src: T, signal: string, slot: Invokable)
         l = slot::l;
 
     signal_hash.add(proxy + " " + signal, l);
-    sys->print("signal_hash.added: %x %s %s %x\n", signal_hash, proxy, signal, slot);
 }
 
 dispatcher(signal_ch: chan of string)
@@ -140,7 +140,6 @@ dispatcher(signal_ch: chan of string)
 
 # Proxy classes
 
-
 QAction._get_proxy(w: self ref QAction): string
 {
     return w.proxy;
@@ -157,8 +156,16 @@ QApplication.quit(w: self ref QApplication)
     call(w.proxy, "quit", nil);
 }
 
-QApplication.quit_slot(w: ref QApplication, args: list of string)
+QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): list of string
+    for { T => _get_proxy: fn(w: self T): string; }
 {
+    value := call("QFileDialog", "getOpenFileName", parent._get_proxy()::caption::dir::filter::nil);
+    return str->unquoted(value);
+}
+
+QMainWindow._get_proxy(w: self ref QMainWindow): string
+{
+    return w.proxy;
 }
 
 QMainWindow.init(args: list of string): ref QMainWindow
@@ -179,7 +186,12 @@ QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
     return ref QMenuBar(value);
 }
 
-QMainWindow.setTitle(w: self ref QMainWindow, title: string)
+QMainWindow.resize(w: self ref QMainWindow, width, height: int)
+{
+    QWidget._resize(w.proxy, width, height);
+}
+
+QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
 {
     call(w.proxy, "setWindowTitle", quote(title)::nil);
 }
@@ -201,6 +213,11 @@ QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
     return ref QMenu(value);
 }
 
+QWidget._resize(proxy: string, width, height: int)
+{
+    call(proxy, "resize", (string width)::(string height)::nil);
+}
+
 QWidget.init(args: list of string): ref QWidget
 {
     proxy := create("QWidget", args);
@@ -210,6 +227,11 @@ QWidget.init(args: list of string): ref QWidget
 QWidget.close(w: self ref QWidget)
 {
     call(w.proxy, "close", nil);
+}
+
+QWidget.resize(w: self ref QWidget, width, height: int)
+{
+    QWidget._resize(w.proxy, width, height);
 }
 
 QWidget.show(w: self ref QWidget)

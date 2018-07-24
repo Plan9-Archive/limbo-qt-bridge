@@ -30,7 +30,6 @@ QtWidgets: module
 
     QAction: adt {
         proxy: string;
-
         _get_proxy: fn(w: self ref QAction): string;
     };
 
@@ -39,16 +38,24 @@ QtWidgets: module
 
         init: fn(args: list of string): ref QApplication;
         quit: fn(w: self ref QApplication);
-        quit_slot: fn(w: ref QApplication, args: list of string);
+    };
+
+    QFileDialog: adt {
+        proxy: string;
+
+        getOpenFileName: fn[T](parent: T, caption, dir, filter: string): list of string
+            for { T => _get_proxy: fn(w: self T): string; };
     };
 
     QMainWindow: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QMainWindow): string;
 
         init: fn(args: list of string): ref QMainWindow;
         close: fn(w: self ref QMainWindow);
         menuBar: fn(w: self ref QMainWindow): ref QMenuBar;
-        setTitle: fn(w: self ref QMainWindow, title: string);
+        resize: fn(w: self ref QMainWindow, width, height: int);
+        setWindowTitle: fn(w: self ref QMainWindow, title: string);
         show: fn(w: self ref QMainWindow);
     };
 
@@ -67,8 +74,11 @@ QtWidgets: module
     QWidget: adt {
         proxy: string;
 
+        _resize: fn(proxy: string, width, height: int);
+
         init: fn(args: list of string): ref QWidget;
         close: fn(w: self ref QWidget);
+        resize: fn(w: self ref QWidget, width, height: int);
         show: fn(w: self ref QWidget);
     };
 };

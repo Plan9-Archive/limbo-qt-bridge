@@ -226,7 +226,11 @@ class ObjectManager(QObject):
     
     def typed_value_to_string(self, value):
     
-        return str(value)
+        if type(value) == tuple:
+            s = map(repr, value)
+            return " ".join(s)
+        else:
+            return str(value)
     
     def handleError(self, message):
     
