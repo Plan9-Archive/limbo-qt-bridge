@@ -55,17 +55,12 @@ class ProcessHandler(QObject):
                 self.pendingInput = self.pendingInput.mid(space + 1)
                 self.in_message = True
             
-            # Try to read the rest of the message and the trailing newline.
-            if len(self.pendingInput) > self.inputExpected:
+            # Try to read the rest of the message.
+            if len(self.pendingInput) >= self.inputExpected:
             
                 command = self.pendingInput.left(self.inputExpected)
                 
-                if self.pendingInput[self.inputExpected] != "\n":
-                    self.processError.emit("Invalid message received.")
-                    return
-                
-                # Skip the trailing newline.
-                self.pendingInput = self.pendingInput.mid(self.inputExpected + 1)
+                self.pendingInput = self.pendingInput.mid(self.inputExpected)
                 self.in_message = False
                 self.inputExpected = 0
                 self.commandReceived.emit(str(command, "utf8"))
@@ -77,22 +72,17 @@ class ProcessHandler(QObject):
     
     def handleOutput(self, message):
     
-        # Write the length of the message, the message itself, and a newline.
-        message = "%i %s\n" % (len(message), message)
+        # Write the length of the message and the message itself.
+        message = "%i %s" % (len(message), message)
         self.pendingOutput += QByteArray(bytes(message, "utf8"))
         
         while self.pendingOutput.size() > 0:
         
-            newline = self.pendingOutput.indexOf(b"\n")
-            
-            if newline == -1:
-                return
-            
-            written = self.process.write(self.pendingOutput.left(newline + 1))
+            written = self.process.write(self.pendingOutput)
             
             if written == -1:
                 self.processError.emit("Failed to write to application.")
                 return
             
             # Handle the rest of the output.
-            self.pendingOutput = self.pendingOutput.mid(newline + 1)
+            self.pendingOutput = self.pendingOutput.mid(written)

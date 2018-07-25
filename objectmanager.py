@@ -23,18 +23,18 @@ class ObjectManager(QObject):
     
     def handleCommand(self, command):
     
-        # create <id> <name> <type> <args>...
-        # forget <id> <name>
-        # call <id> <object> <method> <args>...
+        # create    <id> <name>   <type>   <args>...
+        # forget    <id> <name>
+        # call      <id> <object> <method> <args>...
         # call_keep <id> <object> <method> <args>...
-        # connect <id> <src> <signal>
+        # connect   <id> <src>    <signal>
         
         space = command.find(" ")
         if space == -1:
             return
         
-        cmd, args = command[:space].rstrip(), command[space + 1:]
-        args, defs = self.parse_arguments(args)
+        args, defs = self.parse_arguments(command)
+        cmd = args.pop(0)
         id_ = args[0]
         
         try:
@@ -57,10 +57,14 @@ class ObjectManager(QObject):
             return
         
         # Send the return value of the method call.
-        self.messagePending.emit("value %i %s" % (
-            id_, self.typed_value_to_string(result)))
-        self.debugMessage.emit("value %i %s" % (
-            id_, self.typed_value_to_string(result)))
+        self.messagePending.emit(
+            self.typed_value_to_string("value") + \
+            self.typed_value_to_string(id_) + \
+            self.typed_value_to_string(result, defs))
+        self.debugMessage.emit(
+            self.typed_value_to_string("value") + \
+            self.typed_value_to_string(id_) + \
+            self.typed_value_to_string(result, defs))
     
     def create(self, args, defs):
     
@@ -136,115 +140,103 @@ class ObjectManager(QObject):
         # classes and objects to their original names in the argument text.
         args = []
         defs = {}
-        in_quote = False
-        in_escape = False
+        section = 0
+        type_ = None
+        length = 0
         arg = ""
         n = 0
         
         for c in text:
-            if c == " ":
-                if in_quote:
-                    # Spaces are included verbatim in quotes...
+        
+            if section == 0:
+                # Read the type.
+                type_ = c
+                section = 1
+                arg = ""
+            
+            elif section == 1:
+                # Read the length:
+                if c != " ":
                     arg += c
-                elif arg != "":
-                    # ...or are separators between arguments.
-                    args.append(self.string_to_typed_value(arg, defs))
+                else:
+                    length = int(arg)
+                    section = 2
                     arg = ""
             
-            elif c == '"':
-                if in_escape:
-                    # Escaped quotes are included verbatim.
+            elif section == 2:
+                # Read the value.
+                if len(arg) < length:
                     arg += c
-                    in_escape = False
-                elif in_quote:
-                    # Closing quotes are included verbatim.
-                    arg += c
-                    in_quote = False
-                elif arg != "":
-                    # An opening quote must be the first character.
-                    raise ValueError("Unexpected quote at column %i in '%s'." % (n, text))
                 else:
-                    # Opening quotes are included verbatim.
-                    arg += c
-                    in_quote = True
-            
-            elif c == "\\":
-                if in_quote:
-                    if in_escape:
-                        arg += c
-                        in_escape = False
-                    else:
-                        in_escape = True
-                else:
-                    raise ValueError("Unexpected escape sequence outside a string at column %i in '%s'." % (n, text))
-            elif not in_quote and arg[-1:] == '"':
-                # Other characters cannot follow closing quotes.
-                raise ValueError("Unexpected character following quote at column %i in '%s'." % (n, text))
-            else:
-                # Include all other characters.
-                arg += c
+                    # Skip a character.
+                    args.append(self.string_to_typed_value(arg, type_, defs))
+                    section = 0
+                    arg = ""
             
             n += 1
         
-        if in_quote:
-            raise ValueError("Unmatched quotes at end of '%s'." % text)
-        
-        if arg != "":
-            args.append(self.string_to_typed_value(arg, defs))
-        
         return args, defs
     
-    def string_to_typed_value(self, arg, defs):
+    str_to_type = {"s": str, "i": int, "f": float, "b": bytes}
+    
+    def string_to_typed_value(self, arg, type_, defs):
     
         # Check for data of various types.
+        if type_ in self.str_to_type:
+            return self.str_to_type[type_](arg)
         
-        if arg.startswith('"'):
-            # Already a string so just remove the quotes.
-            return arg[1:-1]
+        elif type_ == "t":
+            args, tdefs = self.parse_arguments(arg)
+            defs.update(tdefs)
+            return tuple(args)
         
-        # A boolean or None value?
-        try:
-            return {"True": True, "False": False, "None": None}[arg]
-        except KeyError:
-            pass
+        elif type_ == "B":
+            return {"True": True, "False": False}[arg]
         
-        # A floating point value?
-        if "." in arg:
-            try:
-                return float(arg)
-            except ValueError:
-                pass
+        elif type_ == "N":
+            return None
         
-        # An integer?
-        try:
-            if arg.startswith("0x"):
-                return int(arg, 16)
-            else:
-                return int(arg)
-        except ValueError:
-            pass
-        
-        # The name of an object or class?
-        if arg in self.objects:
+        elif type_ == "I" and arg in self.objects:
             obj = self.objects[arg]
             defs[obj] = arg
             return obj
         
-        elif arg in self.classes:
+        elif type_ == "C" and arg in self.classes:
             class_ = self.classes[arg]
             defs[class_] = arg
             return class_
         
-        # Just return a string.
-        return arg
-    
-    def typed_value_to_string(self, value):
-    
-        if type(value) == tuple:
-            s = map(repr, value)
-            return " ".join(s)
         else:
-            return str(value)
+            raise ValueError("Cannot decode value %s of type '%s'.\n" % (repr(arg), type_))
+    
+    type_to_str = {str: "s", int: "i", float: "f", bytes: "b"}
+    
+    def typed_value_to_string(self, value, defs = None):
+    
+        type_ = type(value)
+        
+        if type_ in self.type_to_str:
+            c = self.type_to_str[type_]
+            s = str(value)
+            return "%s%i %s " % (c, len(s), s)
+        
+        elif type_ == tuple:
+            l = map(self.typed_value_to_string, list(value))
+            s = "".join(l)
+            return "t%i %s " % (len(s), s)
+        
+        elif defs and value in defs:
+            s = defs[value]
+            return "I%i %s " % (len(s), s)
+        
+        elif value == None:
+            return "N4 None "
+        elif value == True:
+            return "B4 True "
+        elif value == False:
+            return "B5 False "
+        else:
+            raise ValueError("Cannot encode value %s.\n" % repr(value))
     
     def handleError(self, message):
     
@@ -253,7 +245,8 @@ class ObjectManager(QObject):
     
     def handleFinished(self):
     
-        QCoreApplication.instance().quit()
+        #QCoreApplication.instance().quit()
+        pass
     
     def dispatchSignal(self, src_name, signal_name, args):
     
