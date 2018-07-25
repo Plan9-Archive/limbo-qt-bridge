@@ -232,7 +232,7 @@ QTextEdit.init(): ref QTextEdit
 
 QTextEdit.setText(w: self ref QTextEdit, text: string)
 {
-    call(w.proxy, "setText", text::nil);
+    call(w.proxy, "setText", quote(text)::nil);
 }
 
 QWidget._close(proxy: string)

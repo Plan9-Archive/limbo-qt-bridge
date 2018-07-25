@@ -23,7 +23,7 @@ class ObjectManager(QObject):
     
     def handleCommand(self, command):
     
-        # create <id> <name> <type>
+        # create <id> <name> <type> <args>...
         # forget <id> <name>
         # call <id> <object> <method> <args>...
         # call_keep <id> <object> <method> <args>...
@@ -57,9 +57,9 @@ class ObjectManager(QObject):
             return
         
         # Send the return value of the method call.
-        self.messagePending.emit("value %i %s\n" % (
+        self.messagePending.emit("value %i %s" % (
             id_, self.typed_value_to_string(result)))
-        self.debugMessage.emit("value %i %s\n" % (
+        self.debugMessage.emit("value %i %s" % (
             id_, self.typed_value_to_string(result)))
     
     def create(self, args, defs):
@@ -137,6 +137,7 @@ class ObjectManager(QObject):
         args = []
         defs = {}
         in_quote = False
+        in_escape = False
         arg = ""
         n = 0
         
@@ -151,7 +152,11 @@ class ObjectManager(QObject):
                     arg = ""
             
             elif c == '"':
-                if in_quote:
+                if in_escape:
+                    # Escaped quotes are included verbatim.
+                    arg += c
+                    in_escape = False
+                elif in_quote:
                     # Closing quotes are included verbatim.
                     arg += c
                     in_quote = False
@@ -163,6 +168,15 @@ class ObjectManager(QObject):
                     arg += c
                     in_quote = True
             
+            elif c == "\\":
+                if in_quote:
+                    if in_escape:
+                        arg += c
+                        in_escape = False
+                    else:
+                        in_escape = True
+                else:
+                    raise ValueError("Unexpected escape sequence outside a string at column %i in '%s'." % (n, text))
             elif not in_quote and arg[-1:] == '"':
                 # Other characters cannot follow closing quotes.
                 raise ValueError("Unexpected character following quote at column %i in '%s'." % (n, text))
@@ -246,7 +260,7 @@ class ObjectManager(QObject):
         # Find the name of the sender.
         serialised_args = map(self.typed_value_to_string, args)
         self.messagePending.emit("signal 0 %s %s" % (src_name, signal_name) + \
-            " " + " ".join(serialised_args) + "\n")
+            " " + " ".join(serialised_args))
 
 
 class SignalReceiver(QObject):

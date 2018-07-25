@@ -20,6 +20,8 @@ class ProcessHandler(QObject):
         self.process.closeReadChannel(QProcess.StandardError)
         self.process.finished.connect(self.processFinished)
         self.pendingInput = QByteArray()
+        self.in_message = False
+        self.inputExpected = 0
         self.pendingOutput = QByteArray()
         self.process.start(self.executable)
         
@@ -41,20 +43,42 @@ class ProcessHandler(QObject):
         
         while self.pendingInput.size() > 0:
         
-            newline = self.pendingInput.indexOf(b"\n")
+            if not self.in_message:
+                space = self.pendingInput.indexOf(b" ")
+                if space == -1:
+                    return
+                
+                # Specify UTF-8 instead of falling back on something implicit.
+                self.inputExpected = int(str(self.pendingInput.left(space), "utf8"))
+                
+                # Examine the rest of the input.
+                self.pendingInput = self.pendingInput.mid(space + 1)
+                self.in_message = True
             
-            if newline == -1:
+            # Try to read the rest of the message and the trailing newline.
+            if len(self.pendingInput) > self.inputExpected:
+            
+                command = self.pendingInput.left(self.inputExpected)
+                
+                if self.pendingInput[self.inputExpected] != "\n":
+                    self.processError.emit("Invalid message received.")
+                    return
+                
+                # Skip the trailing newline.
+                self.pendingInput = self.pendingInput.mid(self.inputExpected + 1)
+                self.in_message = False
+                self.inputExpected = 0
+                self.commandReceived.emit(str(command, "utf8"))
+            
+            elif self.process.bytesAvailable() > 0:
+                self.pendingInput += self.process.readAllStandardOutput()
+            else:
                 return
-            
-            # Drop the newline from the command.
-            command = str(self.pendingInput.left(newline), "utf8")
-            # Skip the newline for the rest of the input.
-            self.pendingInput = self.pendingInput.mid(newline + 1)
-            
-            self.commandReceived.emit(command)
     
     def handleOutput(self, message):
     
+        # Write the length of the message, the message itself, and a newline.
+        message = "%i %s\n" % (len(message), message)
         self.pendingOutput += QByteArray(bytes(message, "utf8"))
         
         while self.pendingOutput.size() > 0:

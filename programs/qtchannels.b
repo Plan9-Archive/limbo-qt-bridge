@@ -77,53 +77,62 @@ Channels.reader(c: self ref Channels)
     read_array := array[256] of byte;
     current := "";
     value_str : string;
+    in_message := 0;
+    input_expected := 0;
 
     for (;;) {
 
-        #sys->print("Reading...\n");
         # Read as much as possible from stdin.
         read := sys->read(stdin, read_array, 256);
         # Convert the input to a string and append it to the current string.
         current += string read_array[:read];
-        #sys->print("Read %d bytes\n", read);
 
         ### Handle multiple commands as well as end of file.
 
-        # Split the current text at the first newline, obtaining the next
-        # command string.
-        (value_str, current) = str->splitstrl(current, "\n");
-        #sys->print("'%s' '%s'\n", value_str, current);
+        if (in_message == 0) {
 
-        # If there was no newline then put the value string back in the current
-        # string and keep reading.
-        if (current == nil) {
-            current = value_str;
-            continue;
+            # Find a number followed by a space.
+            (length, rest) := str->splitstrl(current, " ");
+
+            # If no space is found then read again.
+            if (rest == nil)
+                continue;
+
+            # Convert the length string to a number.
+            input_expected = int length;
+
+            # Examine the rest of the input.
+            current = rest[1:];
+            in_message = 1;
         }
 
-        if (len current > 0)
-            current = current[1:];
+        # Try to read the rest of the message and the trailing newline.
+        if (len current > input_expected) {
 
-        # The value string does not contain a trailing newline.
+            value_str := current[:input_expected];
+            token : string;
 
-        # Remove the first word from the value string ("value"), extract the
-        # second (the identifier) and return the rest as a value.
-        token : string;
-        (token, value_str) = str->splitl(value_str, " ");
-        value_str = value_str[1:];
+            # Remove the first word from the value string ("value"), extract
+            # the second (the identifier) and return the rest as a value.
+            (token, value_str) = str->splitl(value_str, " ");
+            value_str = value_str[1:];
 
-        (token, value_str) = str->splitl(value_str, " ");
-        id := int token;
-        value_str = value_str[1:];
+            (token, value_str) = str->splitl(value_str, " ");
+            value_str = value_str[1:];
 
-        ch := c.response_hash.find(id);
-        if (ch != nil) {
-            ch <-= value_str;
-            continue;
+            ch := c.response_hash.find(int token);
+            if (ch != nil) {
+                # Send the command via the response channel.
+                ch <-= value_str;
+            } else {
+                # Send the command via the default read channel.
+                c.read_ch <-= value_str;
+            }
+
+            # Skip the trailing newline.
+            current = current[input_expected + 1:];
+            in_message = 0;
         }
-
-        # Send the command via the default read channel.
-        c.read_ch <-= value_str;
     }
 }
 
@@ -135,11 +144,27 @@ Channels.writer(c: self ref Channels)
 
         # Convert each string from the write channel to a byte array.
         s := <- c.write_ch;
-        write_array := array of byte s;
+        message_array := array of byte s;
+        message_length := len message_array;
 
-        # Write the entire array to stdout.
-        available := len write_array;
-        if (sys->write(stdout, write_array, available) != available) {
+        # Prefix the message with its length and append a newline to it.
+        length_array := array of byte (string message_length + " ");
+        length_length := len length_array;
+
+        # Write the length and space to stdout.
+        if (sys->write(stdout, length_array, length_length) != length_length) {
+            fprint(sys->fildes(2), "Write error.\n");
+            exit;
+        }
+
+        # Write the message to stdout.
+        if (sys->write(stdout, message_array, message_length) != message_length) {
+            fprint(sys->fildes(2), "Write error.\n");
+            exit;
+        }
+
+        # Write a trailing newline to stdout.
+        if (sys->write(stdout, array of byte "\n", 1) != 1) {
             fprint(sys->fildes(2), "Write error.\n");
             exit;
         }
@@ -156,7 +181,7 @@ Channels.request(c: self ref Channels, action: string, args: list of string): st
     for (; args != nil; args = tl args)
         message += " " + hd args;
 
-    c.write_ch <-= message + "\n";
+    c.write_ch <-= message;
     value := <- response_ch;
 
     # Delete the entry for the response in the response hash.
