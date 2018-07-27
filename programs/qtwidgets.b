@@ -117,7 +117,7 @@ debug_msg(s: string)
 # Signal-slot connection and dispatch
 
 connect[T](src: T, signal: string, slot: Invokable)
-    for { T => _get_proxy: fn(w: self T):string; }
+    for { T => _get_proxy: fn(w: self T): string; }
 {
     proxy := src._get_proxy();
     channels.request(enc_str("connect"), enc(proxy, "I")::enc_str(signal)::nil);
@@ -160,7 +160,7 @@ QAction._get_proxy(w: self ref QAction): string
     return w.proxy;
 }
 
-QApplication.init(): ref QApplication
+QApplication.new(): ref QApplication
 {
     proxy := dec_str(call_static_keep("QApplication", "instance", nil));
     return ref(QApplication(proxy));
@@ -181,12 +181,22 @@ QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string
     return parse_2tuple(value);
 }
 
+QLabel._get_proxy(w: self ref QLabel): string
+{
+    return w.proxy;
+}
+
+QLabel.setText(w: self ref QLabel, text: string)
+{
+    call(w.proxy, "setText", enc_str(text)::nil);
+}
+
 QMainWindow._get_proxy(w: self ref QMainWindow): string
 {
     return w.proxy;
 }
 
-QMainWindow.init(): ref QMainWindow
+QMainWindow.new(): ref QMainWindow
 {
     proxy := create("QMainWindow", nil);
     return ref QMainWindow(proxy);
@@ -231,7 +241,7 @@ QMenu.addAction(w: self ref QMenu, text: string): ref QAction
     return ref QAction(value);
 }
 
-QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
+QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QMenu
 {
     value := dec_str(call_keep(w.proxy, "addMenu", enc_str(title)::nil));
     return ref QMenu(value);
@@ -242,7 +252,7 @@ QTextEdit._get_proxy(w: self ref QTextEdit): string
     return w.proxy;
 }
 
-QTextEdit.init(): ref QTextEdit
+QTextEdit.new(): ref QTextEdit
 {
     proxy := create("QTextEdit", nil);
     return ref QTextEdit(proxy);
@@ -253,9 +263,37 @@ QTextEdit.setText(w: self ref QTextEdit, text: string)
     call(w.proxy, "setText", enc_str(text)::nil);
 }
 
+QVBoxLayout._get_proxy(w: self ref QVBoxLayout): string
+{
+    return w.proxy;
+}
+
+QVBoxLayout.new(): ref QVBoxLayout
+{
+    proxy := create("QVBoxLayout", nil);
+    return ref QVBoxLayout(proxy);
+}
+
+QVBoxLayout.addWidget[T](w: self ref QVBoxLayout, widget: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addWidget", enc(widget._get_proxy(), "I")::nil);
+}
+
+QVBoxLayout.addLayout[T](w: self ref QVBoxLayout, widget: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addLayout", enc(widget._get_proxy(), "I")::nil);
+}
+
 QWidget._close(proxy: string)
 {
     call(proxy, "close", nil);
+}
+
+QWidget._get_proxy(w: self ref QWidget): string
+{
+    return w.proxy;
 }
 
 QWidget._resize(proxy: string, width, height: int)
@@ -263,12 +301,17 @@ QWidget._resize(proxy: string, width, height: int)
     call(proxy, "resize", enc_int(width)::enc_int(height)::nil);
 }
 
+QWidget._setLayout(proxy: string, layout: string)
+{
+    call(proxy, "setLayout", enc(layout, "I")::nil);
+}
+
 QWidget._setWindowTitle(proxy, title: string)
 {
     call(proxy, "setWindowTitle", enc_str(title)::nil);
 }
 
-QWidget.init(): ref QWidget
+QWidget.new(): ref QWidget
 {
     proxy := create("QWidget", nil);
     return ref QWidget(proxy);
@@ -282,6 +325,12 @@ QWidget.close(w: self ref QWidget)
 QWidget.resize(w: self ref QWidget, width, height: int)
 {
     QWidget._resize(w.proxy, width, height);
+}
+
+QWidget.setLayout[T](w: self ref QWidget, layout: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    QWidget._setLayout(w.proxy, layout._get_proxy());
 }
 
 QWidget.show(w: self ref QWidget)

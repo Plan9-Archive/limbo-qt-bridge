@@ -27,7 +27,7 @@ QtWidgets: module
     debug_msg: fn(s: string);
 
     connect: fn[T](src: T, signal: string, slot: Invokable)
-        for { T => _get_proxy: fn(w: self T):string; };
+        for { T => _get_proxy: fn(w: self T): string; };
 
     dispatcher: fn(signal_ch: chan of string);
 
@@ -39,7 +39,7 @@ QtWidgets: module
     QApplication: adt {
         proxy: string;
 
-        init: fn(): ref QApplication;
+        new: fn(): ref QApplication;
         quit: fn(w: self ref QApplication);
     };
 
@@ -50,11 +50,18 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
     };
 
+    QLabel: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QLabel): string;
+
+        setText: fn(w: self ref QLabel, text: string);
+    };
+
     QMainWindow: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QMainWindow): string;
 
-        init: fn(): ref QMainWindow;
+        new: fn(): ref QMainWindow;
         close: fn(w: self ref QMainWindow);
         menuBar: fn(w: self ref QMainWindow): ref QMenuBar;
         resize: fn(w: self ref QMainWindow, width, height: int);
@@ -80,22 +87,37 @@ QtWidgets: module
         proxy: string;
         _get_proxy: fn(w: self ref QTextEdit): string;
 
-        init: fn(): ref QTextEdit;
+        new: fn(): ref QTextEdit;
         setText: fn(w: self ref QTextEdit, text: string);
+    };
+
+    QVBoxLayout: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QVBoxLayout): string;
+
+        new: fn(): ref QVBoxLayout;
+        addWidget: fn[T](w: self ref QVBoxLayout, widget: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        addLayout: fn[T](w: self ref QVBoxLayout, widget: T)
+            for { T => _get_proxy: fn(w: self T): string; };
     };
 
     QWidget: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QWidget): string;
 
         # These methods originate in QWidget, so provide internal convenience
         # functions for calling them.
         _close: fn(proxy: string);
         _resize: fn(proxy: string, width, height: int);
+        _setLayout: fn(proxy: string, layout: string);
         _setWindowTitle: fn(proxy, title: string);
 
-        init: fn(): ref QWidget;
+        new: fn(): ref QWidget;
         close: fn(w: self ref QWidget);
         resize: fn(w: self ref QWidget, width, height: int);
+        setLayout: fn[T](w: self ref QWidget, layout: T)
+            for { T => _get_proxy: fn(w: self T): string; };
         show: fn(w: self ref QWidget);
     };
 };

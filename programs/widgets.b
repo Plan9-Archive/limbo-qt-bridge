@@ -49,9 +49,9 @@ init(ctxt: ref Draw->Context, args: list of string)
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
-    app = QApplication.init();
+    app = QApplication.new();
 
-    window = QMainWindow.init();
+    window = QMainWindow.new();
 
     menuBar := window.menuBar();
     menu := menuBar.addMenu("&File");
@@ -60,7 +60,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     connect(openAction, "triggered", handle_open);
     connect(exitAction, "triggered", handle_exit);
 
-    editor = QTextEdit.init();
+    editor = QTextEdit.new();
     window.setCentralWidget(editor);
 
     window.setWindowTitle("Limbo to Qt Bridge Demonstration");
