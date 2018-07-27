@@ -13,13 +13,20 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     
-    if len(app.arguments()) != 2:
+    args = app.arguments()
+    if "--debug" in args:
+        debug = True
+        args.remove("--debug")
+    else:
+        debug = False
+    
+    if len(args) != 2:
         sys.stderr.write("Usage: %s <executable>\n" % sys.argv[0])
         sys.exit(1)
     
     executable = app.arguments()[1]
     
-    objectManager = ObjectManager()
+    objectManager = ObjectManager(debug = debug)
     
     processThread = QThread()
     processHandler = ProcessHandler(executable)
@@ -33,7 +40,8 @@ if __name__ == "__main__":
     if geometry:
         view.setGeometry(geometry)
     
-    view.show()
+    if debug:
+        view.show()
     
     def html(s):
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

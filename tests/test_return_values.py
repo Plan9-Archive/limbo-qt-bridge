@@ -30,7 +30,6 @@ def receive(expecting):
     length = 0
     
     while True:
-        open("/tmp/log.txt", "a").write(repr(current) + "\n")
         current += sys.stdin.read(1)
         
         if not in_message:

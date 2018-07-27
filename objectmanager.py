@@ -6,9 +6,10 @@ class ObjectManager(QObject):
     messagePending = pyqtSignal(str)
     debugMessage = pyqtSignal(str)
     
-    def __init__(self, parent = None):
+    def __init__(self, parent = None, debug = False):
     
         QObject.__init__(self, parent)
+        self.debug = debug
         
         self.classes = {}
         for name, obj in QtWidgets.__dict__.items():
@@ -57,14 +58,12 @@ class ObjectManager(QObject):
             return
         
         # Send the return value of the method call.
-        self.messagePending.emit(
-            self.typed_value_to_string("value") + \
+        message = self.typed_value_to_string("value") + \
             self.typed_value_to_string(id_) + \
-            self.typed_value_to_string(result, defs))
-        self.debugMessage.emit(
-            self.typed_value_to_string("value") + \
-            self.typed_value_to_string(id_) + \
-            self.typed_value_to_string(result, defs))
+            self.typed_value_to_string(result, defs)
+        
+        self.messagePending.emit(message)
+        self.debugMessage.emit(message)
     
     def create(self, args, defs):
     
@@ -241,19 +240,26 @@ class ObjectManager(QObject):
     def handleError(self, message):
     
         QtWidgets.QMessageBox.critical(None, "Qt Bridge", message)
-        QCoreApplication.instance().quit()
+        if not self.debug:
+            QCoreApplication.instance().quit()
     
     def handleFinished(self):
     
-        #QCoreApplication.instance().quit()
-        pass
+        if not self.debug:
+            QCoreApplication.instance().quit()
     
     def dispatchSignal(self, src_name, signal_name, args):
     
         # Find the name of the sender.
         serialised_args = map(self.typed_value_to_string, args)
-        self.messagePending.emit("signal 0 %s %s" % (src_name, signal_name) + \
-            " " + " ".join(serialised_args))
+        message = self.typed_value_to_string("signal") + \
+            self.typed_value_to_string(0) + \
+            self.typed_value_to_string(src_name) + \
+            self.typed_value_to_string(signal_name) + \
+            "".join(serialised_args)
+        
+        self.messagePending.emit(message)
+        self.debugMessage.emit(message)
 
 
 class SignalReceiver(QObject):

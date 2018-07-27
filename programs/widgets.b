@@ -28,7 +28,7 @@ include "string.m";
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QAction, QFileDialog, QMainWindow, QMenu, QMenuBar: import qt;
-    QTextEdit, connect, Invokable: import qt;
+    QTextEdit, connect, Invokable, debug_msg: import qt;
 
 Widgets: module
 {
@@ -82,9 +82,8 @@ handle_exit(args: list of string)
 
 handle_open(args: list of string)
 {
-    value := QFileDialog.getOpenFileName(window, "Open File", "", "*.txt");
-    file_name := hd value;
-    filter := hd (tl value);
+    (file_name, filter) := QFileDialog.getOpenFileName(
+        window, "Open File", "", "*.txt");
 
     if (file_name == nil)
         return;
@@ -100,7 +99,7 @@ handle_open(args: list of string)
     n : int;
     do {
         n = sys->readn(f, b, 1024);
-        s += string b;
+        s += string b[:n];
     } while (n > 0);
 
     editor.setText(s);

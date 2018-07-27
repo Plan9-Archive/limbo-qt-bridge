@@ -41,34 +41,38 @@ class ProcessHandler(QObject):
     
         self.pendingInput += self.process.readAllStandardOutput()
         
-        while self.pendingInput.size() > 0:
-        
-            if not self.in_message:
-                space = self.pendingInput.indexOf(b" ")
-                if space == -1:
+        try:
+            while self.pendingInput.size() > 0:
+            
+                if not self.in_message:
+                    space = self.pendingInput.indexOf(b" ")
+                    if space == -1:
+                        return
+                    
+                    # Specify UTF-8 instead of falling back on something implicit.
+                    self.inputExpected = int(str(self.pendingInput.left(space), "utf8"))
+                    
+                    # Examine the rest of the input.
+                    self.pendingInput = self.pendingInput.mid(space + 1)
+                    self.in_message = True
+                
+                # Try to read the rest of the message.
+                if len(self.pendingInput) >= self.inputExpected:
+                
+                    command = self.pendingInput.left(self.inputExpected)
+                    
+                    self.pendingInput = self.pendingInput.mid(self.inputExpected)
+                    self.in_message = False
+                    self.inputExpected = 0
+                    self.commandReceived.emit(str(command, "utf8"))
+                
+                elif self.process.bytesAvailable() > 0:
+                    self.pendingInput += self.process.readAllStandardOutput()
+                else:
                     return
-                
-                # Specify UTF-8 instead of falling back on something implicit.
-                self.inputExpected = int(str(self.pendingInput.left(space), "utf8"))
-                
-                # Examine the rest of the input.
-                self.pendingInput = self.pendingInput.mid(space + 1)
-                self.in_message = True
-            
-            # Try to read the rest of the message.
-            if len(self.pendingInput) >= self.inputExpected:
-            
-                command = self.pendingInput.left(self.inputExpected)
-                
-                self.pendingInput = self.pendingInput.mid(self.inputExpected)
-                self.in_message = False
-                self.inputExpected = 0
-                self.commandReceived.emit(str(command, "utf8"))
-            
-            elif self.process.bytesAvailable() > 0:
-                self.pendingInput += self.process.readAllStandardOutput()
-            else:
-                return
+        
+        except ValueError:
+            self.processError.emit(str(self.pendingInput, "utf8"))
     
     def handleOutput(self, message):
     

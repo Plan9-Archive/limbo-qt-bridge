@@ -64,8 +64,8 @@ Channels.get(c: self ref Channels): (int, chan of string)
 
     c.counter = (c.counter + 1) % 1024;
     
-    # Internally, the identifier 0 is reserved for general communication, so
-    # use values from 1 to 1024 for other messages.
+    # Internally, the identifier 0 is reserved for signals, so use values from
+    # 1 to 1024 for other messages.
     c.response_hash.add(c.counter + 1, response_ch);
 
     return (c.counter + 1, response_ch);
@@ -106,19 +106,25 @@ Channels.reader(c: self ref Channels)
             in_message = 1;
         }
 
-        # Try to read the rest of the message and the trailing newline.
-        if (len current > input_expected) {
+        # Try to read the rest of the message.
+        if (len current >= input_expected) {
 
             value_str := current[:input_expected];
-            token : string;
+            type_, token : string;
 
-            # Remove the first word from the value string ("value"), extract
-            # the second (the identifier) and return the rest as a value.
-            (token, value_str) = str->splitl(value_str, " ");
-            value_str = value_str[1:];
+            (type_, token, value_str) = parse_arg(value_str);
+            if (type_ != "s") {
+                errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
+                fprint(sys->fildes(2), "%d %s", len errstr, errstr);
+                exit;
+            }
 
-            (token, value_str) = str->splitl(value_str, " ");
-            value_str = value_str[1:];
+            (type_, token, value_str) = parse_arg(value_str);
+            if (type_ != "i") {
+                errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
+                fprint(sys->fildes(2), "%d %s", len errstr, errstr);
+                exit;
+            }
 
             ch := c.response_hash.find(int token);
             if (ch != nil) {
@@ -129,8 +135,7 @@ Channels.reader(c: self ref Channels)
                 c.read_ch <-= value_str;
             }
 
-            # Skip the trailing newline.
-            current = current[input_expected + 1:];
+            current = current[input_expected:];
             in_message = 0;
         }
     }
@@ -162,12 +167,6 @@ Channels.writer(c: self ref Channels)
             fprint(sys->fildes(2), "Write error.\n");
             exit;
         }
-
-        # Write a trailing newline to stdout.
-        if (sys->write(stdout, array of byte "\n", 1) != 1) {
-            fprint(sys->fildes(2), "Write error.\n");
-            exit;
-        }
     }
 }
 
@@ -175,11 +174,16 @@ Channels.request(c: self ref Channels, action: string, args: list of string): st
 {
     # Obtain a channel to use to receive a response.
     (key, response_ch) := c.get();
+    key_string := string key;
+    key_string = "i" + (string len key_string) + " " + key_string + " ";
 
     # Send the call request and receive the response.
-    message := sprint("%s %d", action, key);
+    message := sprint("%s%s", action, key_string);
     for (; args != nil; args = tl args)
-        message += " " + hd args;
+        message += hd args;
+
+    if (message[len message - 1] == ' ')
+        message[len message - 1] = '\n';
 
     c.write_ch <-= message;
     value := <- response_ch;
@@ -188,4 +192,55 @@ Channels.request(c: self ref Channels, action: string, args: list of string): st
     c.response_hash.del(key);
 
     return value;
+}
+
+enc(s, t: string): string
+{
+    return t + (string len s) + " " + s + " ";
+}
+
+enc_str(s: string): string
+{
+    return enc(s, "s");
+}
+
+enc_int(i: int): string
+{
+    s := string i;
+    return enc(s, "i");
+}
+
+parse_arg(s: string): (string, string, string)
+{
+    # Obtain the type and length.
+    type_ := s[:1];
+    token : string;
+
+    (token, s) = str->splitstrl(s[1:], " ");
+    length := int token;
+
+    # Return the type, argument and remaining string.
+    token = s[1:1 + length];
+    return (type_, token, s[length + 2:]);
+}
+
+dec_str(s: string): string
+{
+    (type_, token, rest) := parse_arg(s);
+    return token;
+}
+
+dec_int(s: string): int
+{
+    (type_, token, rest) := parse_arg(s);
+    return int token;
+}
+
+parse_2tuple(s: string): (string, string)
+{
+    type_, contents, token0, token1: string;
+    (type_, contents, s) = parse_arg(s);
+    (type_, token0, contents) = parse_arg(contents);
+    (type_, token1, contents) = parse_arg(contents);
+    return (token0, token1);
 }

@@ -1,6 +1,7 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
-    Channels: import qtchannels;
+    Channels, enc, enc_int, enc_str, parse_arg, dec_str: import qtchannels;
+    dec_int, parse_2tuple: import qtchannels;
 
 QtWidgets: module
 {
@@ -23,6 +24,8 @@ QtWidgets: module
     call: fn(proxy, method: string, args: list of string): string;
     call_keep: fn(proxy, method: string, args: list of string): string;
 
+    debug_msg: fn(s: string);
+
     connect: fn[T](src: T, signal: string, slot: Invokable)
         for { T => _get_proxy: fn(w: self T):string; };
 
@@ -43,7 +46,7 @@ QtWidgets: module
     QFileDialog: adt {
         proxy: string;
 
-        getOpenFileName: fn[T](parent: T, caption, dir, filter: string): list of string
+        getOpenFileName: fn[T](parent: T, caption, dir, filter: string): (string, string)
             for { T => _get_proxy: fn(w: self T): string; };
     };
 

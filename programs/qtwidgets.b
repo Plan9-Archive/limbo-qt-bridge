@@ -64,7 +64,7 @@ create(class: string, args: list of string): string
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
     proxy := sys->sprint("%s_%x", class, tr_counter);
-    channels.request("create", proxy::class::args);
+    channels.request(enc_str("create"), enc(proxy, "s")::enc(class, "C")::args);
     tr_counter = (tr_counter + 1) & 16r0fffffff;
 
     return proxy;
@@ -72,18 +72,28 @@ create(class: string, args: list of string): string
 
 forget(proxy: string)
 {
-    channels.request("forget", proxy::proxy::nil);
+    channels.request(enc_str("forget"), enc(proxy, "I")::enc(proxy, "I")::nil);
     tr_counter = (tr_counter + 1) & 16r0fffffff;
 }
 
 call(proxy, method: string, args: list of string): string
 {
-    return channels.request("call", proxy::method::args);
+    return channels.request(enc_str("call"), enc(proxy, "I")::enc_str(method)::args);
+}
+
+call_static(proxy, method: string, args: list of string): string
+{
+    return channels.request(enc_str("call"), enc(proxy, "C")::enc_str(method)::args);
 }
 
 call_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request("call_keep", proxy::method::args);
+    return channels.request(enc_str("call_keep"), enc(proxy, "I")::enc_str(method)::args);
+}
+
+call_static_keep(proxy, method: string, args: list of string): string
+{
+    return channels.request(enc_str("call_keep"), enc(proxy, "C")::enc_str(method)::args);
 }
 
 # Utility functions
@@ -98,13 +108,19 @@ unquote(s: string): string
     return s[1:len(s) - 1];
 }
 
+debug_msg(s: string)
+{
+    msg := sprint("s5 debug i4 9999 s%d '%s'", len s + 2, s);
+    sys->print("%d %s", len msg, msg);
+}
+
 # Signal-slot connection and dispatch
 
 connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T):string; }
 {
     proxy := src._get_proxy();
-    channels.request("connect", proxy::signal::nil);
+    channels.request(enc_str("connect"), enc(proxy, "I")::enc_str(signal)::nil);
 
     # Register the destination slot.
     l := signal_hash.find(proxy + " " + signal);
@@ -122,19 +138,18 @@ dispatcher(signal_ch: chan of string)
         s := <- signal_ch =>
             # Split the key (the first two words in the reply) from the signal
             # arguments (the rest).
-            n := 0;
-            for (i := 0; i < len s && n < 2; i++) {
-                if (s[i:i+1] == " ")
-                    n += 1;
-            }
-            key := s[:i - 1];
+            type_, src, signal : string;
+
+            (type_, src, s) = parse_arg(s);
+            (type_, signal, s) = parse_arg(s);
+            key := src + " " + signal;
 
             # Find the list of slots in the hash and call each of them with the
             # list of arguments.
             slots := signal_hash.find(key);
 
             for (; slots != nil; slots = tl slots)
-                (hd slots)(str->unquoted(s[i:]));
+                (hd slots)(str->unquoted(s));
     }
 }
 
@@ -147,7 +162,7 @@ QAction._get_proxy(w: self ref QAction): string
 
 QApplication.init(): ref QApplication
 {
-    proxy := call_keep("QApplication", "instance", nil);
+    proxy := dec_str(call_static_keep("QApplication", "instance", nil));
     return ref(QApplication(proxy));
 }
 
@@ -156,11 +171,14 @@ QApplication.quit(w: self ref QApplication)
     call(w.proxy, "quit", nil);
 }
 
-QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): list of string
+QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string, string)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    value := call("QFileDialog", "getOpenFileName", parent._get_proxy()::caption::dir::filter::nil);
-    return str->unquoted(value);
+    value := call_static("QFileDialog", "getOpenFileName",
+        enc(parent._get_proxy(), "I")::enc_str(caption)::enc_str(dir)::
+        enc_str(filter)::nil);
+
+    return parse_2tuple(value);
 }
 
 QMainWindow._get_proxy(w: self ref QMainWindow): string
@@ -182,7 +200,7 @@ QMainWindow.close(w: self ref QMainWindow)
 QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
 {
     # Ensure that the return value is registered.
-    value := call_keep(w.proxy, "menuBar", nil);
+    value := dec_str(call_keep(w.proxy, "menuBar", nil));
     return ref QMenuBar(value);
 }
 
@@ -194,7 +212,7 @@ QMainWindow.resize(w: self ref QMainWindow, width, height: int)
 QMainWindow.setCentralWidget[T](w: self ref QMainWindow, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "setCentralWidget", widget._get_proxy()::nil);
+    call(w.proxy, "setCentralWidget", enc(widget._get_proxy(), "I")::nil);
 }
 
 QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
@@ -209,13 +227,13 @@ QMainWindow.show(w: self ref QMainWindow)
 
 QMenu.addAction(w: self ref QMenu, text: string): ref QAction
 {
-    value := call_keep(w.proxy, "addAction", quote(text)::nil);
+    value := dec_str(call_keep(w.proxy, "addAction", enc_str(text)::nil));
     return ref QAction(value);
 }
 
 QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QAction
 {
-    value := call_keep(w.proxy, "addMenu", quote(title)::nil);
+    value := dec_str(call_keep(w.proxy, "addMenu", enc_str(title)::nil));
     return ref QMenu(value);
 }
 
@@ -232,7 +250,7 @@ QTextEdit.init(): ref QTextEdit
 
 QTextEdit.setText(w: self ref QTextEdit, text: string)
 {
-    call(w.proxy, "setText", quote(text)::nil);
+    call(w.proxy, "setText", enc_str(text)::nil);
 }
 
 QWidget._close(proxy: string)
@@ -242,12 +260,12 @@ QWidget._close(proxy: string)
 
 QWidget._resize(proxy: string, width, height: int)
 {
-    call(proxy, "resize", (string width)::(string height)::nil);
+    call(proxy, "resize", enc_int(width)::enc_int(height)::nil);
 }
 
 QWidget._setWindowTitle(proxy, title: string)
 {
-    call(proxy, "setWindowTitle", quote(title)::nil);
+    call(proxy, "setWindowTitle", enc_str(title)::nil);
 }
 
 QWidget.init(): ref QWidget
