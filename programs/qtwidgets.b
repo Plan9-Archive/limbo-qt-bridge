@@ -186,6 +186,12 @@ QLabel._get_proxy(w: self ref QLabel): string
     return w.proxy;
 }
 
+QLabel.new(): ref QLabel
+{
+    proxy := create("QLabel", nil);
+    return ref QLabel(proxy);
+}
+
 QLabel.setText(w: self ref QLabel, text: string)
 {
     call(w.proxy, "setText", enc_str(text)::nil);
@@ -331,6 +337,11 @@ QWidget.setLayout[T](w: self ref QWidget, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     QWidget._setLayout(w.proxy, layout._get_proxy());
+}
+
+QWidget.setWindowTitle(w: self ref QWidget, title: string)
+{
+    QWidget._setWindowTitle(w.proxy, title);
 }
 
 QWidget.show(w: self ref QWidget)

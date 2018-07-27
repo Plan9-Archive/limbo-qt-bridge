@@ -54,6 +54,7 @@ QtWidgets: module
         proxy: string;
         _get_proxy: fn(w: self ref QLabel): string;
 
+        new: fn(): ref QLabel;
         setText: fn(w: self ref QLabel, text: string);
     };
 
@@ -118,6 +119,7 @@ QtWidgets: module
         resize: fn(w: self ref QWidget, width, height: int);
         setLayout: fn[T](w: self ref QWidget, layout: T)
             for { T => _get_proxy: fn(w: self T): string; };
+        setWindowTitle: fn(w: self ref QWidget, title: string);
         show: fn(w: self ref QWidget);
     };
 };
