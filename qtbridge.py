@@ -52,6 +52,8 @@ if __name__ == "__main__":
     
     processThread = QThread()
     processHandler = ProcessHandler(executable)
+    # Move the process handler into the worker thread so that, when it runs,
+    # any objects it creates will be created in that thread.
     processHandler.moveToThread(processThread)
     processThread.started.connect(processHandler.run)
     

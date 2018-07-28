@@ -36,7 +36,7 @@ class ProcessHandler(QObject):
     
     def run(self):
     
-        self.process = QProcess(self)
+        self.process = QProcess()
         self.process.readyReadStandardOutput.connect(self.handleInput)
         self.process.setReadChannel(QProcess.StandardOutput)
         self.process.closeReadChannel(QProcess.StandardError)
