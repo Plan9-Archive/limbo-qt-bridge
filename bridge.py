@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# This program is intended to be run as a subprocess of another program.
+# GUI commands are passed to the program's stdin channel and responses are
+# written to its stdout channel.
+
 import sys
 
 from PyQt5.QtCore import QByteArray, QFile, QObject, QThread, Qt, pyqtSignal, \
