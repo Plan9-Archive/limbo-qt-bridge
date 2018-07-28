@@ -55,6 +55,11 @@ if __name__ == "__main__":
     processHandler.moveToThread(processThread)
     processThread.started.connect(processHandler.run)
     
+    def fn(*args):
+        print("Thread finished.")
+    
+    processThread.finished.connect(fn)
+    
     settings = QSettings("uk.org.boddie", "Limbo-Qt bridge")
     geometry = settings.value("log window geometry")
     
@@ -78,19 +83,24 @@ if __name__ == "__main__":
     objectManager.debugMessage.connect(output_text)
     
     processHandler.commandReceived.connect(objectManager.handleCommand)
-    processHandler.processFinished.connect(objectManager.handleFinished)
-    processHandler.processError.connect(objectManager.handleError)
     objectManager.messagePending.connect(processHandler.handleOutput)
-    
-    def saveSettings():
-        settings.setValue("log window geometry", view.geometry())
     
     # Manage application exit carefully by monitoring when the last window is
     # closed. In theory, the process handler and its thread should not have
     # been deleted at this point.
     app.setQuitOnLastWindowClosed(False)
     app.lastWindowClosed.connect(processHandler.quit)
-    app.lastWindowClosed.connect(saveSettings)
+    
+    def saveSettingsAndExit():
+        settings.setValue("log window geometry", view.geometry())
+        print("Thread is running:", processThread.isRunning())
+        print("Process state:", processHandler.process.state())
+        app.quit()
+    
+    processHandler.processFinished.connect(objectManager.handleFinished)
+    processHandler.processError.connect(objectManager.handleError)
+    objectManager.finished.connect(processThread.quit)
+    processThread.finished.connect(saveSettingsAndExit)
     
     processThread.start()
     sys.exit(app.exec());

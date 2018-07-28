@@ -59,7 +59,7 @@ class ProcessHandler(QObject):
         self.process.closeWriteChannel()
         self.process.terminate()
         self.process.waitForFinished()
-        QCoreApplication.instance().quit()
+        self.thread().quit()
     
     def handleInput(self):
     

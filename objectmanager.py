@@ -27,6 +27,7 @@ class ObjectManager(QObject):
 
     messagePending = pyqtSignal(str)
     debugMessage = pyqtSignal(str)
+    finished = pyqtSignal()
     
     def __init__(self, parent = None, debug = False):
     
@@ -263,12 +264,12 @@ class ObjectManager(QObject):
     
         QtWidgets.QMessageBox.critical(None, "Qt Bridge", message)
         if not self.debug:
-            QCoreApplication.instance().quit()
+            self.finished.emit()
     
     def handleFinished(self):
     
         if not self.debug:
-            QCoreApplication.instance().quit()
+            self.finished.emit()
     
     def dispatchSignal(self, src_name, signal_name, args):
     
