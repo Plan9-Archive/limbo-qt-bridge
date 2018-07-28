@@ -212,8 +212,25 @@ enc_int(i: int): string
 
 enc_enum(name: string, value: int): string
 {
-    s := enc(name, "E") + enc_int(value);
-    return sprint("e%d %s ", len s, s);
+    # Create a pair of encoded values: C<length> <name> i<length> <value>
+    s := enc(name, "C") + enc_int(value);
+    # Wrap them in an enum value specifier: e<length> ...
+    return sprint("v%d %s ", len s, s);
+}
+
+enc_value(name: string, values: list of string): string
+{
+    # Wrap the encoded values in a value class specifier: v<length> ...
+    s := enc(name, "C");
+    for (; values != nil; values = tl values)
+        s += hd values;
+    return sprint("v%d %s ", len s, s);
+}
+
+enc_inst[T](instance: T): string
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    return enc(instance._get_proxy(), "I");
 }
 
 parse_arg(s: string): (string, string, string)

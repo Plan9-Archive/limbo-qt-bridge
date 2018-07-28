@@ -171,11 +171,17 @@ QApplication.quit(w: self ref QApplication)
     call(w.proxy, "quit", nil);
 }
 
+QColor.enc(w: self QColor): string
+{
+    values := enc_int(w.red)::enc_int(w.green)::enc_int(w.blue)::enc_int(w.alpha)::nil;
+    return enc_value("QColor", values);
+}
+
 QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string, string)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     value := call_static("QFileDialog", "getOpenFileName",
-        enc(parent._get_proxy(), "I")::enc_str(caption)::enc_str(dir)::
+        enc_inst(parent)::enc_str(caption)::enc_str(dir)::
         enc_str(filter)::nil);
 
     return parse_2tuple(value);
@@ -196,14 +202,14 @@ QGridLayout.addWidget[T](w: self ref QGridLayout, widget: T, row, column, rowspa
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w.proxy, "addWidget",
-        enc(widget._get_proxy(), "I")::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
+        enc_inst(widget)::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
 }
 
 QGridLayout.addLayout[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w.proxy, "addLayout",
-        enc(widget._get_proxy(), "I")::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
+        enc_inst(widget)::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
 }
 
 QHBoxLayout._get_proxy(w: self ref QHBoxLayout): string
@@ -220,13 +226,13 @@ QHBoxLayout.new(): ref QHBoxLayout
 QHBoxLayout.addWidget[T](w: self ref QHBoxLayout, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "addWidget", enc(widget._get_proxy(), "I")::nil);
+    call(w.proxy, "addWidget", enc_inst(widget)::nil);
 }
 
 QHBoxLayout.addLayout[T](w: self ref QHBoxLayout, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "addLayout", enc(widget._get_proxy(), "I")::nil);
+    call(w.proxy, "addLayout", enc_inst(widget)::nil);
 }
 
 QLabel._get_proxy(w: self ref QLabel): string
@@ -245,9 +251,25 @@ QLabel.setAlignment(w: self ref QLabel, alignment: int)
     call(w.proxy, "setAlignment", enc_enum("Alignment", alignment)::nil);
 }
 
+QLabel.setPixmap[T](w: self ref QLabel, pixmap: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "setPixmap", enc_inst(pixmap)::nil);
+}
+
 QLabel.setText(w: self ref QLabel, text: string)
 {
     call(w.proxy, "setText", enc_str(text)::nil);
+}
+
+QLabel.setWindowTitle(w: self ref QLabel, title: string)
+{
+    QWidget._setWindowTitle(w.proxy, title);
+}
+
+QLabel.show(w: self ref QLabel)
+{
+    call(w.proxy, "show", nil);
 }
 
 QMainWindow._get_proxy(w: self ref QMainWindow): string
@@ -281,7 +303,7 @@ QMainWindow.resize(w: self ref QMainWindow, width, height: int)
 QMainWindow.setCentralWidget[T](w: self ref QMainWindow, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "setCentralWidget", enc(widget._get_proxy(), "I")::nil);
+    call(w.proxy, "setCentralWidget", enc_inst(widget)::nil);
 }
 
 QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
@@ -304,6 +326,39 @@ QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QMenu
 {
     value := dec_str(call_keep(w.proxy, "addMenu", enc_str(title)::nil));
     return ref QMenu(value);
+}
+
+QPainter.new(): ref QPainter
+{
+    proxy := create("QPainter", nil);
+    return ref QPainter(proxy);
+}
+
+QPainter.begin[T](w: self ref QPainter, device: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "begin", enc_inst(device)::nil);
+}
+
+QPainter.end(w: self ref QPainter)
+{
+    call(w.proxy, "end", nil);
+}
+
+QPixmap._get_proxy(w: self ref QPixmap): string
+{
+    return w.proxy;
+}
+
+QPixmap.new(width, height: int): ref QPixmap
+{
+    proxy := create("QPixmap", enc_int(width)::enc_int(height)::nil);
+    return ref QPixmap(proxy);
+}
+
+QPixmap.fill(w: self ref QPixmap, color: QColor)
+{
+    call(w.proxy, "fill", color.enc()::nil);
 }
 
 QTextEdit._get_proxy(w: self ref QTextEdit): string
@@ -336,13 +391,13 @@ QVBoxLayout.new(): ref QVBoxLayout
 QVBoxLayout.addWidget[T](w: self ref QVBoxLayout, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "addWidget", enc(widget._get_proxy(), "I")::nil);
+    call(w.proxy, "addWidget", enc_inst(widget)::nil);
 }
 
 QVBoxLayout.addLayout[T](w: self ref QVBoxLayout, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w.proxy, "addLayout", enc(widget._get_proxy(), "I")::nil);
+    call(w.proxy, "addLayout", enc_inst(widget)::nil);
 }
 
 QWidget._close(proxy: string)

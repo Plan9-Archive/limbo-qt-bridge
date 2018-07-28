@@ -22,7 +22,7 @@
 
 import sip
 from PyQt5.QtCore import QCoreApplication, QObject, pyqtSignal
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class ObjectManager(QObject):
 
@@ -36,21 +36,16 @@ class ObjectManager(QObject):
         self.debug = debug
         
         self.classes = {}
-        for module in QtCore, QtWidgets:
+        
+        for module in QtCore, QtCore.Qt, QtGui, QtWidgets:
             for name, obj in module.__dict__.items():
                 try:
                     if issubclass(obj, QObject):
                         self.classes[name] = obj
+                    elif issubclass(obj, sip.simplewrapper):
+                        self.classes[name] = obj
                 except TypeError:
                     pass
-        
-        self.simple = {}
-        for name, obj in QtCore.Qt.__dict__.items():
-            try:
-                if issubclass(obj, sip.simplewrapper):
-                    self.simple[name] = obj
-            except TypeError:
-                pass
         
         self.objects = {}
         self.counter = 0
@@ -241,18 +236,12 @@ class ObjectManager(QObject):
             defs[class_] = arg
             return class_
         
-        elif type_ == "E" and arg in self.simple:
-            # Enum class
-            class_ = self.simple[arg]
-            defs[class_] = arg
-            return class_
-        
-        elif type_ == "e":
-            # Enum class and value
+        elif type_ == "v":
+            # Enum or value class and values
             args, tdefs = self.parse_arguments(arg)
-            enum = args[0]
-            value = args[1]
-            return enum(value)
+            class_ = args[0]
+            values = args[1:]
+            return class_(*values)
         
         else:
             raise ValueError("Cannot decode value %s of type '%s'.\n" % (repr(arg), type_))

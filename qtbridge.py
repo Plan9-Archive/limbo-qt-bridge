@@ -79,8 +79,9 @@ if __name__ == "__main__":
     def output_text(s):
         view.append("<b>output: </b><tt>%s</tt>\n" % html(repr(s)))
     
-    processHandler.commandReceived.connect(input_text)
-    objectManager.debugMessage.connect(output_text)
+    if debug:
+        processHandler.commandReceived.connect(input_text)
+        objectManager.debugMessage.connect(output_text)
     
     processHandler.commandReceived.connect(objectManager.handleCommand)
     objectManager.messagePending.connect(processHandler.handleOutput)

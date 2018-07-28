@@ -1,7 +1,7 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
-    Channels, enc, enc_int, enc_str, enc_enum, parse_arg: import qtchannels;
-    dec_str, dec_int, parse_2tuple: import qtchannels;
+    Channels, enc, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
+    parse_arg, dec_str, dec_int, parse_2tuple: import qtchannels;
 
 QtWidgets: module
 {
@@ -49,6 +49,11 @@ QtWidgets: module
         quit: fn(w: self ref QApplication);
     };
 
+    QColor: adt {
+        red, green, blue, alpha: int;
+        enc: fn(w: self QColor): string;
+    };
+
     QFileDialog: adt {
         proxy: string;
 
@@ -84,7 +89,11 @@ QtWidgets: module
 
         new: fn(): ref QLabel;
         setAlignment: fn(w: self ref QLabel, alignment: int);
+        setPixmap: fn[T](w: self ref QLabel, pixmap: T)
+            for { T => _get_proxy: fn(w: self T): string; };
         setText: fn(w: self ref QLabel, text: string);
+        setWindowTitle: fn(w: self ref QLabel, title: string);
+        show: fn(w: self ref QLabel);
     };
 
     QMainWindow: adt {
@@ -111,6 +120,23 @@ QtWidgets: module
         proxy: string;
 
         addMenu: fn(w: self ref QMenuBar, title: string): ref QMenu;
+    };
+
+    QPainter: adt {
+        proxy: string;
+
+        new: fn(): ref QPainter;
+        begin: fn[T](w: self ref QPainter, device: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        end: fn(w: self ref QPainter);
+    };
+
+    QPixmap: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QPixmap): string;
+
+        new: fn(width, height: int): ref QPixmap;
+        fill: fn(w: self ref QPixmap, color: QColor);
     };
 
     QTextEdit: adt {
