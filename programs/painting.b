@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QColor, QLabel, QPixmap, QWidget: import qt;
+    QApplication, QColor, QLabel, QPainter, QPixmap, QWidget: import qt;
 
 Painting: module
 {
@@ -44,6 +44,11 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     pixmap := QPixmap.new(400, 400);
     pixmap.fill(QColor(240, 160, 100, 255));
+
+    painter := QPainter.new();
+    painter.begin(pixmap);
+    painter.drawText(150, 180, "Hello Limbo!");
+    painter.end();
 
     label := QLabel.new();
     label.setPixmap(pixmap);

@@ -171,6 +171,11 @@ QApplication.quit(w: self ref QApplication)
     call(w.proxy, "quit", nil);
 }
 
+QBrush.enc(w: self QBrush): string
+{
+    return enc_value("QBrush", w.color.enc()::nil);
+}
+
 QColor.enc(w: self QColor): string
 {
     values := enc_int(w.red)::enc_int(w.green)::enc_int(w.blue)::enc_int(w.alpha)::nil;
@@ -340,9 +345,34 @@ QPainter.begin[T](w: self ref QPainter, device: T)
     call(w.proxy, "begin", enc_inst(device)::nil);
 }
 
+QPainter.drawRect(w: self ref QPainter, x, y, width, height: int)
+{
+    call(w.proxy, "drawRect", enc_int(x)::enc_int(y)::enc_int(width)::enc_int(height)::nil);
+}
+
+QPainter.drawText(w: self ref QPainter, x, y: int, text: string)
+{
+    call(w.proxy, "drawText", enc_int(x)::enc_int(y)::enc_str(text)::nil);
+}
+
 QPainter.end(w: self ref QPainter)
 {
     call(w.proxy, "end", nil);
+}
+
+QPainter.setBrush(w: self ref QPainter, brush: QBrush)
+{
+    call(w.proxy, "setBrush", brush.enc()::nil);
+}
+
+QPainter.setPen(w: self ref QPainter, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QPen.enc(w: self QPen): string
+{
+    return enc_value("QPen", w.color.enc()::nil);
 }
 
 QPixmap._get_proxy(w: self ref QPixmap): string

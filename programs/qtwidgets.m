@@ -49,6 +49,11 @@ QtWidgets: module
         quit: fn(w: self ref QApplication);
     };
 
+    QBrush: adt {
+        color: QColor;
+        enc: fn(w: self QBrush): string;
+    };
+
     QColor: adt {
         red, green, blue, alpha: int;
         enc: fn(w: self QColor): string;
@@ -128,7 +133,16 @@ QtWidgets: module
         new: fn(): ref QPainter;
         begin: fn[T](w: self ref QPainter, device: T)
             for { T => _get_proxy: fn(w: self T): string; };
+        drawRect: fn(w: self ref QPainter, x, y, width, height: int);
+        drawText: fn(w: self ref QPainter, x, y: int, text: string);
         end: fn(w: self ref QPainter);
+        setBrush: fn(w: self ref QPainter, brush: QBrush);
+        setPen: fn(w: self ref QPainter, brush: QPen);
+    };
+
+    QPen: adt {
+        color: QColor;
+        enc: fn(w: self QPen): string;
     };
 
     QPixmap: adt {
