@@ -62,14 +62,19 @@ class ObjectManager(QObject):
         if space == -1:
             return
         
-        args, defs = self.parse_arguments(command)
+        try:
+            args, defs = self.parse_arguments(command)
+        except ValueError as e:
+            self.debugMessage.emit(str(e))
+            return
+        
         cmd = args.pop(0)
         id_ = args[0]
         
         try:
             if cmd == "create":
                 result = self.create(args, defs)
-            elif cmd == "create":
+            elif cmd == "forget":
                 result = self.forget(args, defs)
             elif cmd == "call":
                 result = self.call_method(args, defs)
