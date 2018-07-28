@@ -1,4 +1,4 @@
-# widgets.b
+# layouts.b
 #
 # Written in 2018 by David Boddie <david@boddie.org.uk>
 #
@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QLabel, QVBoxLayout, QWidget: import qt;
+    QApplication, QGridLayout, QHBoxLayout, QLabel, Qt, QVBoxLayout, QWidget: import qt;
 
 Layouts: module
 {
@@ -53,10 +53,34 @@ init(ctxt: ref Draw->Context, args: list of string)
     layout := QVBoxLayout.new();
     layout.addWidget(label1);
     layout.addWidget(label2);
+
+    for (i := 1; i <= 4; i++) {
+
+        hbox := QHBoxLayout.new();
+
+        for (j := 0; j < i; j++) {
+            label := QLabel.new();
+            label.setText(string j);
+            hbox.addWidget(label);
+        }
+
+        layout.addLayout(hbox);
+    }
+
+    grid := QGridLayout.new();
+
+    for (i = 0; i < 4; i++) {
+        for (j := 0; j < 4; j++) {
+            label := QLabel.new();
+            label.setText(string i + "," + string j);
+            grid.addWidget(label, i, j, 1, 1);
+        }
+    }
+
+    layout.addLayout(grid);
     window.setLayout(layout);
 
     window.setWindowTitle("Limbo to Qt Bridge Layouts Demonstration");
-    window.resize(640, 480);
     window.show();
 
     for (;;) {}

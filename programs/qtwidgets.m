@@ -31,6 +31,12 @@ QtWidgets: module
 
     dispatcher: fn(signal_ch: chan of string);
 
+    Qt: adt {
+        AlignLeft, AlignRight, AlignHCenter, AlignJustify, AlignAbsolute: con (1 << iota);
+        AlignCenter: con 16r84;
+        AlignTop, AlignBottom, AlignVCenter, AlignBaseline: con (16r20 << iota);
+    };
+
     QAction: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QAction): string;
@@ -50,11 +56,34 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
     };
 
+    QGridLayout: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGridLayout): string;
+
+        new: fn(): ref QGridLayout;
+        addWidget: fn[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
+            for { T => _get_proxy: fn(w: self T): string; };
+        addLayout: fn[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
+            for { T => _get_proxy: fn(w: self T): string; };
+    };
+
+    QHBoxLayout: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QHBoxLayout): string;
+
+        new: fn(): ref QHBoxLayout;
+        addWidget: fn[T](w: self ref QHBoxLayout, widget: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        addLayout: fn[T](w: self ref QHBoxLayout, widget: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+    };
+
     QLabel: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QLabel): string;
 
         new: fn(): ref QLabel;
+        setAlignment: fn(w: self ref QLabel, alignment: int);
         setText: fn(w: self ref QLabel, text: string);
     };
 

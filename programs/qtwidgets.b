@@ -181,6 +181,54 @@ QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string
     return parse_2tuple(value);
 }
 
+QGridLayout._get_proxy(w: self ref QGridLayout): string
+{
+    return w.proxy;
+}
+
+QGridLayout.new(): ref QGridLayout
+{
+    proxy := create("QGridLayout", nil);
+    return ref QGridLayout(proxy);
+}
+
+QGridLayout.addWidget[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addWidget",
+        enc(widget._get_proxy(), "I")::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
+}
+
+QGridLayout.addLayout[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addLayout",
+        enc(widget._get_proxy(), "I")::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
+}
+
+QHBoxLayout._get_proxy(w: self ref QHBoxLayout): string
+{
+    return w.proxy;
+}
+
+QHBoxLayout.new(): ref QHBoxLayout
+{
+    proxy := create("QHBoxLayout", nil);
+    return ref QHBoxLayout(proxy);
+}
+
+QHBoxLayout.addWidget[T](w: self ref QHBoxLayout, widget: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addWidget", enc(widget._get_proxy(), "I")::nil);
+}
+
+QHBoxLayout.addLayout[T](w: self ref QHBoxLayout, widget: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w.proxy, "addLayout", enc(widget._get_proxy(), "I")::nil);
+}
+
 QLabel._get_proxy(w: self ref QLabel): string
 {
     return w.proxy;
@@ -190,6 +238,11 @@ QLabel.new(): ref QLabel
 {
     proxy := create("QLabel", nil);
     return ref QLabel(proxy);
+}
+
+QLabel.setAlignment(w: self ref QLabel, alignment: int)
+{
+    call(w.proxy, "setAlignment", enc_int(alignment)::nil);
 }
 
 QLabel.setText(w: self ref QLabel, text: string)
