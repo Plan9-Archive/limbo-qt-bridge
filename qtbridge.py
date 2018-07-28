@@ -28,8 +28,8 @@ from PyQt5.QtCore import QSettings, QThread, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QTextBrowser
 
-from objectmanager import ObjectManager
-from processhandler import ProcessHandler
+from QtBridge.objectmanager import ObjectManager
+from QtBridge.processhandler import ProcessHandler
 
 if __name__ == "__main__":
 
