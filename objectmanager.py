@@ -20,8 +20,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import sip
 from PyQt5.QtCore import QCoreApplication, QObject, pyqtSignal
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 class ObjectManager(QObject):
 
@@ -35,10 +36,19 @@ class ObjectManager(QObject):
         self.debug = debug
         
         self.classes = {}
-        for name, obj in QtWidgets.__dict__.items():
+        for module in QtCore, QtWidgets:
+            for name, obj in module.__dict__.items():
+                try:
+                    if issubclass(obj, QObject):
+                        self.classes[name] = obj
+                except TypeError:
+                    pass
+        
+        self.simple = {}
+        for name, obj in QtCore.Qt.__dict__.items():
             try:
-                if issubclass(obj, QObject):
-                    self.classes[name] = obj
+                if issubclass(obj, sip.simplewrapper):
+                    self.simple[name] = obj
             except TypeError:
                 pass
         
@@ -208,6 +218,7 @@ class ObjectManager(QObject):
             return self.str_to_type[type_](arg)
         
         elif type_ == "t":
+            # Tuple
             args, tdefs = self.parse_arguments(arg)
             defs.update(tdefs)
             return tuple(args)
@@ -219,14 +230,29 @@ class ObjectManager(QObject):
             return None
         
         elif type_ == "I" and arg in self.objects:
+            # Instance
             obj = self.objects[arg]
             defs[obj] = arg
             return obj
         
         elif type_ == "C" and arg in self.classes:
+            # Class
             class_ = self.classes[arg]
             defs[class_] = arg
             return class_
+        
+        elif type_ == "E" and arg in self.simple:
+            # Enum class
+            class_ = self.simple[arg]
+            defs[class_] = arg
+            return class_
+        
+        elif type_ == "e":
+            # Enum class and value
+            args, tdefs = self.parse_arguments(arg)
+            enum = args[0]
+            value = args[1]
+            return enum(value)
         
         else:
             raise ValueError("Cannot decode value %s of type '%s'.\n" % (repr(arg), type_))

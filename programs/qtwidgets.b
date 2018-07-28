@@ -242,7 +242,7 @@ QLabel.new(): ref QLabel
 
 QLabel.setAlignment(w: self ref QLabel, alignment: int)
 {
-    call(w.proxy, "setAlignment", enc_int(alignment)::nil);
+    call(w.proxy, "setAlignment", enc_enum("Alignment", alignment)::nil);
 }
 
 QLabel.setText(w: self ref QLabel, text: string)

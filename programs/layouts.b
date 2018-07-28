@@ -60,6 +60,7 @@ init(ctxt: ref Draw->Context, args: list of string)
 
         for (j := 0; j < i; j++) {
             label := QLabel.new();
+            label.setAlignment(Qt.AlignCenter);
             label.setText(string j);
             hbox.addWidget(label);
         }

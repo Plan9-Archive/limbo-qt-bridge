@@ -210,6 +210,12 @@ enc_int(i: int): string
     return enc(s, "i");
 }
 
+enc_enum(name: string, value: int): string
+{
+    s := enc(name, "E") + enc_int(value);
+    return sprint("e%d %s ", len s, s);
+}
+
 parse_arg(s: string): (string, string, string)
 {
     # Obtain the type and length.
