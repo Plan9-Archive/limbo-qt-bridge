@@ -72,8 +72,7 @@ create(class: string, args: list of string): string
 
 forget(proxy: string)
 {
-    channels.request(enc_str("forget"), enc(proxy, "I")::enc(proxy, "I")::nil);
-    tr_counter = (tr_counter + 1) & 16r0fffffff;
+    channels.request(enc_str("forget"), enc_str(proxy)::nil);
 }
 
 call(proxy, method: string, args: list of string): string
@@ -358,6 +357,7 @@ QPainter.drawText(w: self ref QPainter, x, y: int, text: string)
 QPainter.end(w: self ref QPainter)
 {
     call(w.proxy, "end", nil);
+    forget(w.proxy);
 }
 
 QPainter.setBrush(w: self ref QPainter, brush: QBrush)
