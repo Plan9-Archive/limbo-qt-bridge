@@ -221,12 +221,12 @@ QDialog.exec(w: self ref QDialog)
 QDialog.setLayout[T](w: self ref QDialog, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w.proxy, layout._get_proxy());
+    QWidget._setLayout(w, layout._get_proxy());
 }
 
 QDialog.setWindowTitle(w: self ref QDialog, title: string)
 {
-    QWidget._setWindowTitle(w.proxy, title);
+    QWidget._setWindowTitle(w, title);
 }
 
 QDialog.show(w: self ref QDialog)
@@ -283,7 +283,7 @@ QGroupBox.new(title: string): ref QGroupBox
 QGroupBox.setLayout[T](w: self ref QGroupBox, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w.proxy, layout._get_proxy());
+    QWidget._setLayout(w, layout._get_proxy());
 }
 
 QHBoxLayout._get_proxy(w: self ref QHBoxLayout): string
@@ -336,16 +336,6 @@ QLabel.setText(w: self ref QLabel, text: string)
     call(w.proxy, "setText", enc_str(text)::nil);
 }
 
-QLabel.setWindowTitle(w: self ref QLabel, title: string)
-{
-    QWidget._setWindowTitle(w.proxy, title);
-}
-
-QLabel.show(w: self ref QLabel)
-{
-    call(w.proxy, "show", nil);
-}
-
 QMainWindow._get_proxy(w: self ref QMainWindow): string
 {
     return w.proxy;
@@ -359,7 +349,7 @@ QMainWindow.new(): ref QMainWindow
 
 QMainWindow.close(w: self ref QMainWindow)
 {
-    QWidget._close(w.proxy);
+    QWidget._close(w);
 }
 
 QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
@@ -371,7 +361,7 @@ QMainWindow.menuBar(w: self ref QMainWindow): ref QMenuBar
 
 QMainWindow.resize(w: self ref QMainWindow, width, height: int)
 {
-    QWidget._resize(w.proxy, width, height);
+    QWidget._resize(w, width, height);
 }
 
 QMainWindow.setCentralWidget[T](w: self ref QMainWindow, widget: T)
@@ -382,7 +372,7 @@ QMainWindow.setCentralWidget[T](w: self ref QMainWindow, widget: T)
 
 QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
 {
-    QWidget._setWindowTitle(w.proxy, title);
+    QWidget._setWindowTitle(w, title);
 }
 
 QMainWindow.show(w: self ref QMainWindow)
@@ -522,29 +512,33 @@ QVBoxLayout.addLayout[T](w: self ref QVBoxLayout, widget: T)
     call(w.proxy, "addLayout", enc_inst(widget)::nil);
 }
 
-QWidget._close(proxy: string)
-{
-    call(proxy, "close", nil);
-}
-
 QWidget._get_proxy(w: self ref QWidget): string
 {
     return w.proxy;
 }
 
-QWidget._resize(proxy: string, width, height: int)
+QWidget._close[T](w: T)
+    for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(proxy, "resize", enc_int(width)::enc_int(height)::nil);
+    call(w._get_proxy(), "close", nil);
 }
 
-QWidget._setLayout(proxy: string, layout: string)
+QWidget._resize[T](w: T, width, height: int)
+    for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(proxy, "setLayout", enc(layout, "I")::nil);
+    call(w._get_proxy(), "resize", enc_int(width)::enc_int(height)::nil);
 }
 
-QWidget._setWindowTitle(proxy, title: string)
+QWidget._setLayout[T](w: T, layout: string)
+    for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(proxy, "setWindowTitle", enc_str(title)::nil);
+    call(w._get_proxy(), "setLayout", enc(layout, "I")::nil);
+}
+
+QWidget._setWindowTitle[T](w: T, title: string)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w._get_proxy(), "setWindowTitle", enc_str(title)::nil);
 }
 
 QWidget.new(): ref QWidget
@@ -555,23 +549,23 @@ QWidget.new(): ref QWidget
 
 QWidget.close(w: self ref QWidget)
 {
-    QWidget._close(w.proxy);
+    QWidget._close(w);
 }
 
 QWidget.resize(w: self ref QWidget, width, height: int)
 {
-    QWidget._resize(w.proxy, width, height);
+    QWidget._resize(w, width, height);
 }
 
 QWidget.setLayout[T](w: self ref QWidget, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w.proxy, layout._get_proxy());
+    QWidget._setLayout(w, layout._get_proxy());
 }
 
 QWidget.setWindowTitle(w: self ref QWidget, title: string)
 {
-    QWidget._setWindowTitle(w.proxy, title);
+    QWidget._setWindowTitle(w, title);
 }
 
 QWidget.show(w: self ref QWidget)

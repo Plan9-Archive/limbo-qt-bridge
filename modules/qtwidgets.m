@@ -129,8 +129,6 @@ QtWidgets: module
         setPixmap: fn[T](w: self ref QLabel, pixmap: T)
             for { T => _get_proxy: fn(w: self T): string; };
         setText: fn(w: self ref QLabel, text: string);
-        setWindowTitle: fn(w: self ref QLabel, title: string);
-        show: fn(w: self ref QLabel);
     };
 
     QMainWindow: adt {
@@ -224,10 +222,14 @@ QtWidgets: module
 
         # These methods originate in QWidget, so provide internal convenience
         # functions for calling them.
-        _close: fn(proxy: string);
-        _resize: fn(proxy: string, width, height: int);
-        _setLayout: fn(proxy: string, layout: string);
-        _setWindowTitle: fn(proxy, title: string);
+        _close: fn[T](w: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _resize: fn[T](w: T, width, height: int)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _setLayout: fn[T](w: T, layout: string)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _setWindowTitle: fn[T](w: T, title: string)
+            for { T => _get_proxy: fn(w: self T): string; };
 
         new: fn(): ref QWidget;
         close: fn(w: self ref QWidget);
