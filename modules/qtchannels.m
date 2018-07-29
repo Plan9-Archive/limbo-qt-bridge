@@ -30,4 +30,5 @@ QtChannels: module
     dec_str: fn(s: string): string;
     dec_int: fn(s: string): int;
     parse_2tuple: fn(s: string): (string, string);
+    parse_ntuple: fn(s: string): list of string;
 };

@@ -77,22 +77,33 @@ forget(proxy: string)
 
 call(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc(proxy, "I")::enc_str(method)::args);
+    return channels.request(enc_str("call"), enc_str("")::enc(proxy, "I")::enc_str(method)::args);
 }
 
 call_static(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc(proxy, "C")::enc_str(method)::args);
+    return channels.request(enc_str("call"), enc_str("")::enc(proxy, "C")::enc_str(method)::args);
 }
 
 call_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call_keep"), enc(proxy, "I")::enc_str(method)::args);
+    return channels.request(enc_str("call"), enc_str("k")::enc(proxy, "I")::enc_str(method)::args);
 }
 
 call_static_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call_keep"), enc(proxy, "C")::enc_str(method)::args);
+    return channels.request(enc_str("call"), enc_str("k")::enc(proxy, "C")::enc_str(method)::args);
+}
+
+call_value(proxy, method: string, args: list of string, unpack_names: list of string): string
+{
+    # Encode the names of members of the return value in the flags string.
+    # For example: v,width,height
+    flags := "v";
+    for (; unpack_names != nil; unpack_names = tl unpack_names)
+        flags += "," + (hd unpack_names);
+
+    return channels.request(enc_str("call"), enc_str(flags)::enc(proxy, "I")::enc_str(method)::args);
 }
 
 # Utility functions
@@ -221,7 +232,7 @@ QDialog.exec(w: self ref QDialog)
 QDialog.setLayout[T](w: self ref QDialog, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w, layout._get_proxy());
+    QWidget._setLayout(w, layout);
 }
 
 QDialog.setWindowTitle(w: self ref QDialog, title: string)
@@ -283,7 +294,7 @@ QGroupBox.new(title: string): ref QGroupBox
 QGroupBox.setLayout[T](w: self ref QGroupBox, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w, layout._get_proxy());
+    QWidget._setLayout(w, layout);
 }
 
 QHBoxLayout._get_proxy(w: self ref QHBoxLayout): string
@@ -402,6 +413,16 @@ QPainter.begin[T](w: self ref QPainter, device: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w.proxy, "begin", enc_inst(device)::nil);
+}
+
+QPainter.drawEllipse(w: self ref QPainter, x1, y1, x2, y2: int)
+{
+    call(w.proxy, "drawRect", enc_int(x1)::enc_int(y1)::enc_int(x2)::enc_int(y2)::nil);
+}
+
+QPainter.drawLine(w: self ref QPainter, x, y, width, height: int)
+{
+    call(w.proxy, "drawEllipse", enc_int(x)::enc_int(y)::enc_int(width)::enc_int(height)::nil);
 }
 
 QPainter.drawRect(w: self ref QPainter, x, y, width, height: int)
@@ -529,16 +550,32 @@ QWidget._resize[T](w: T, width, height: int)
     call(w._get_proxy(), "resize", enc_int(width)::enc_int(height)::nil);
 }
 
-QWidget._setLayout[T](w: T, layout: string)
+QWidget._setLayout[T](w: T, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    call(w._get_proxy(), "setLayout", enc(layout, "I")::nil);
+    call(w._get_proxy(), "setLayout", enc_inst(layout)::nil);
 }
 
 QWidget._setWindowTitle[T](w: T, title: string)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w._get_proxy(), "setWindowTitle", enc_str(title)::nil);
+}
+
+QWidget._show[T](w: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w._get_proxy(), "show", nil);
+}
+
+QWidget._size[T](w: T): (int, int)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    value := call_value(w._get_proxy(), "size", nil, "width"::"height"::nil);
+    l := parse_ntuple(value);
+    width := int hd l;
+    height := int hd (tl l);
+    return (width, height);
 }
 
 QWidget.new(): ref QWidget
@@ -560,7 +597,7 @@ QWidget.resize(w: self ref QWidget, width, height: int)
 QWidget.setLayout[T](w: self ref QWidget, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    QWidget._setLayout(w, layout._get_proxy());
+    QWidget._setLayout(w, layout);
 }
 
 QWidget.setWindowTitle(w: self ref QWidget, title: string)
@@ -570,5 +607,10 @@ QWidget.setWindowTitle(w: self ref QWidget, title: string)
 
 QWidget.show(w: self ref QWidget)
 {
-    call(w.proxy, "show", nil);
+    QWidget._show(w);
+}
+
+QWidget.size(w: self ref QWidget): (int, int)
+{
+    return QWidget._size(w);
 }

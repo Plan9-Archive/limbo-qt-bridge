@@ -22,6 +22,9 @@
 
 implement QtChannels;
 
+include "lists.m";
+    lists: Lists;
+
 include "string.m";
     str: String;
 
@@ -37,6 +40,7 @@ Channels.init(): ref Channels
 {
     sys = load Sys Sys->PATH;
     str = load String String->PATH;
+    lists = load Lists Lists->PATH;
     tables = load Tables Tables->PATH;
     
     # Enable raw mode so that characters written to stdin are not automatically
@@ -266,4 +270,16 @@ parse_2tuple(s: string): (string, string)
     (type_, token0, contents) = parse_arg(contents);
     (type_, token1, contents) = parse_arg(contents);
     return (token0, token1);
+}
+
+parse_ntuple(s: string): list of string
+{
+    l: list of string;
+    type_, contents, token: string;
+    (type_, contents, s) = parse_arg(s);
+    while (contents != nil) {
+        (type_, token, contents) = parse_arg(contents);
+        l = token::l;
+    }
+    return lists->reverse(l);
 }

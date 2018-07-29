@@ -1,7 +1,7 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
     Channels, enc, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
-    parse_arg, dec_str, dec_int, parse_2tuple: import qtchannels;
+    parse_arg, dec_str, dec_int, parse_2tuple, parse_ntuple: import qtchannels;
 
 QtWidgets: module
 {
@@ -21,8 +21,6 @@ QtWidgets: module
     get_channels: fn(): ref Channels;
 
     create: fn(class: string, args: list of string): string;
-    call: fn(proxy, method: string, args: list of string): string;
-    call_keep: fn(proxy, method: string, args: list of string): string;
 
     debug_msg: fn(s: string);
 
@@ -163,6 +161,8 @@ QtWidgets: module
         new: fn(): ref QPainter;
         begin: fn[T](w: self ref QPainter, device: T)
             for { T => _get_proxy: fn(w: self T): string; };
+        drawEllipse: fn(w: self ref QPainter, x1, y1, width, height: int);
+        drawLine: fn(w: self ref QPainter, x1, y1, x2, y2: int);
         drawRect: fn(w: self ref QPainter, x, y, width, height: int);
         drawText: fn(w: self ref QPainter, x, y: int, text: string);
         end: fn(w: self ref QPainter);
@@ -226,9 +226,13 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         _resize: fn[T](w: T, width, height: int)
             for { T => _get_proxy: fn(w: self T): string; };
-        _setLayout: fn[T](w: T, layout: string)
+        _setLayout: fn[T](w: T, layout: T)
             for { T => _get_proxy: fn(w: self T): string; };
         _setWindowTitle: fn[T](w: T, title: string)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _show: fn[T](w: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _size: fn[T](w: T): (int, int)
             for { T => _get_proxy: fn(w: self T): string; };
 
         new: fn(): ref QWidget;
@@ -238,5 +242,6 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         setWindowTitle: fn(w: self ref QWidget, title: string);
         show: fn(w: self ref QWidget);
+        size: fn(w: self ref QWidget): (int, int);
     };
 };

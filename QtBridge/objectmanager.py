@@ -54,8 +54,7 @@ class ObjectManager(QObject):
     
         # create    <id> <name>   <type>   <args>...
         # forget    <id> <name>
-        # call      <id> <object> <method> <args>...
-        # call_keep <id> <object> <method> <args>...
+        # call      <id> <flags> <object> <method> <args>...
         # connect   <id> <src>    <signal>
         
         space = command.find(" ")
@@ -70,6 +69,7 @@ class ObjectManager(QObject):
         
         cmd = args.pop(0)
         id_ = args[0]
+        flags = None
         
         try:
             if cmd == "create":
@@ -78,8 +78,7 @@ class ObjectManager(QObject):
                 result = self.forget(args, defs)
             elif cmd == "call":
                 result = self.call_method(args, defs)
-            elif cmd == "call_keep":
-                result = self.call_method(args, defs, keep_result = True)
+                flags = args[1].split(",")
             elif cmd == "connect":
                 result = self.connect(args, defs)
             elif cmd == "rconnect":
@@ -95,7 +94,7 @@ class ObjectManager(QObject):
         # Send the return value of the method call.
         message = self.typed_value_to_string("value") + \
             self.typed_value_to_string(id_) + \
-            self.typed_value_to_string(result, defs)
+            self.typed_value_to_string(result, defs, flags)
         
         self.messagePending.emit(message)
         self.debugMessage.emit(message)
@@ -120,13 +119,16 @@ class ObjectManager(QObject):
         except:
             return None
     
-    def call_method(self, args, defs, keep_result = False):
+    def call_method(self, args, defs):
     
-        (id_, obj, method_name), method_args = args[:3], args[3:]
+        (id_, flags, obj, method_name), method_args = args[:4], args[4:]
         
         if type(obj) == str:
             self.debugMessage.emit("Unknown object '%s'." % obj)
             return
+        
+        flags_chars = flags.split(",")
+        keep_result = "k" in flags_chars
         
         try:
             # PyQt handles the method resolution but we could use signatures
@@ -274,7 +276,7 @@ class ObjectManager(QObject):
     
     type_to_str = {str: "s", int: "i", float: "f", bytes: "b"}
     
-    def typed_value_to_string(self, value, defs = None):
+    def typed_value_to_string(self, value, defs = None, flags = None):
     
         type_ = type(value)
         
@@ -287,6 +289,15 @@ class ObjectManager(QObject):
             l = map(self.typed_value_to_string, list(value))
             s = "".join(l)
             return "t%i %s " % (len(s), s)
+        
+        elif flags and "v" in flags[0]:
+            # Return a tuple containing primitive values unpacked from the
+            # value as described by the flags string.
+            names = flags[1:]
+            l = []
+            for name in names:
+                l.append(getattr(value, name)())
+            return self.typed_value_to_string(tuple(l))
         
         elif defs and value in defs:
             s = defs[value]
