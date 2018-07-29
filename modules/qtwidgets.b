@@ -118,10 +118,10 @@ debug_msg(s: string)
 connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    proxy := src._get_proxy();
-    channels.request(enc_str("connect"), enc(proxy, "I")::enc_str(signal)::nil);
+    channels.request(enc_str("connect"), enc_inst(src)::enc_str(signal)::nil);
 
     # Register the destination slot.
+    proxy := src._get_proxy();
     l := signal_hash.find(proxy + " " + signal);
     if (l == nil)
         l = list of { slot };
@@ -152,6 +152,16 @@ dispatcher(signal_ch: chan of string)
     }
 }
 
+# Remote signal-slot connection
+
+rconnect[T,U](src: T, signal: string, dest: U, slot: string)
+    for { T => _get_proxy: fn(w: self T): string;
+          U => _get_proxy: fn(w: self U): string; }
+{
+    channels.request(enc_str("rconnect"),
+        enc_inst(src)::enc_str(signal)::enc_inst(dest)::enc_str(slot)::nil);
+}
+
 # Proxy classes
 
 QAction._get_proxy(w: self ref QAction): string
@@ -175,10 +185,53 @@ QBrush.enc(w: self QBrush): string
     return enc_value("QBrush", w.color.enc()::nil);
 }
 
+QCheckBox._get_proxy(w: self ref QCheckBox): string
+{
+    return w.proxy;
+}
+
+QCheckBox.new(text: string): ref QCheckBox
+{
+    proxy := create("QCheckBox", enc_str(text)::nil);
+    return ref QCheckBox(proxy);
+}
+
 QColor.enc(w: self QColor): string
 {
     values := enc_int(w.red)::enc_int(w.green)::enc_int(w.blue)::enc_int(w.alpha)::nil;
     return enc_value("QColor", values);
+}
+
+QDialog._get_proxy(w: self ref QDialog): string
+{
+    return w.proxy;
+}
+
+QDialog.new(): ref QDialog
+{
+    proxy := create("QDialog", nil);
+    return ref QDialog(proxy);
+}
+
+QDialog.exec(w: self ref QDialog)
+{
+    call(w.proxy, "exec", nil);
+}
+
+QDialog.setLayout[T](w: self ref QDialog, layout: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    QWidget._setLayout(w.proxy, layout._get_proxy());
+}
+
+QDialog.setWindowTitle(w: self ref QDialog, title: string)
+{
+    QWidget._setWindowTitle(w.proxy, title);
+}
+
+QDialog.show(w: self ref QDialog)
+{
+    call(w.proxy, "show", nil);
 }
 
 QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string, string)
@@ -214,6 +267,23 @@ QGridLayout.addLayout[T](w: self ref QGridLayout, widget: T, row, column, rowspa
 {
     call(w.proxy, "addLayout",
         enc_inst(widget)::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
+}
+
+QGroupBox._get_proxy(w: self ref QGroupBox): string
+{
+    return w.proxy;
+}
+
+QGroupBox.new(title: string): ref QGroupBox
+{
+    proxy := create("QGroupBox", enc_str(title)::nil);
+    return ref QGroupBox(proxy);
+}
+
+QGroupBox.setLayout[T](w: self ref QGroupBox, layout: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    QWidget._setLayout(w.proxy, layout._get_proxy());
 }
 
 QHBoxLayout._get_proxy(w: self ref QHBoxLayout): string
@@ -389,6 +459,28 @@ QPixmap.new(width, height: int): ref QPixmap
 QPixmap.fill(w: self ref QPixmap, color: QColor)
 {
     call(w.proxy, "fill", color.enc()::nil);
+}
+
+QPushButton._get_proxy(w: self ref QPushButton): string
+{
+    return w.proxy;
+}
+
+QPushButton.new(text: string): ref QPushButton
+{
+    proxy := create("QPushButton", enc_str(text)::nil);
+    return ref QPushButton(proxy);
+}
+
+QRadioButton._get_proxy(w: self ref QRadioButton): string
+{
+    return w.proxy;
+}
+
+QRadioButton.new(text: string): ref QRadioButton
+{
+    proxy := create("QRadioButton", enc_str(text)::nil);
+    return ref QRadioButton(proxy);
 }
 
 QTextEdit._get_proxy(w: self ref QTextEdit): string

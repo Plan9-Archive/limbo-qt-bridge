@@ -31,6 +31,10 @@ QtWidgets: module
 
     dispatcher: fn(signal_ch: chan of string);
 
+    rconnect: fn[T,U](src: T, signal: string, dest: U, slot: string)
+        for { T => _get_proxy: fn(w: self T): string;
+              U => _get_proxy: fn(w: self U): string; };
+
     Qt: adt {
         AlignLeft, AlignRight, AlignHCenter, AlignJustify, AlignAbsolute: con (1 << iota);
         AlignCenter: con 16r84;
@@ -54,9 +58,28 @@ QtWidgets: module
         enc: fn(w: self QBrush): string;
     };
 
+    QCheckBox: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QCheckBox): string;
+
+        new: fn(text: string): ref QCheckBox;
+    };
+
     QColor: adt {
         red, green, blue, alpha: int;
         enc: fn(w: self QColor): string;
+    };
+
+    QDialog: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QDialog): string;
+
+        new: fn(): ref QDialog;
+        exec: fn(w: self ref QDialog);
+        setLayout: fn[T](w: self ref QDialog, layout: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        setWindowTitle: fn(w: self ref QDialog, title: string);
+        show: fn(w: self ref QDialog);
     };
 
     QFileDialog: adt {
@@ -74,6 +97,15 @@ QtWidgets: module
         addWidget: fn[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
             for { T => _get_proxy: fn(w: self T): string; };
         addLayout: fn[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
+            for { T => _get_proxy: fn(w: self T): string; };
+    };
+
+    QGroupBox: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGroupBox): string;
+
+        new: fn(title: string): ref QGroupBox;
+        setLayout: fn[T](w: self ref QGroupBox, layout: T)
             for { T => _get_proxy: fn(w: self T): string; };
     };
 
@@ -151,6 +183,20 @@ QtWidgets: module
 
         new: fn(width, height: int): ref QPixmap;
         fill: fn(w: self ref QPixmap, color: QColor);
+    };
+
+    QPushButton: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QPushButton): string;
+
+        new: fn(text: string): ref QPushButton;
+    };
+
+    QRadioButton: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QRadioButton): string;
+
+        new: fn(text: string): ref QRadioButton;
     };
 
     QTextEdit: adt {

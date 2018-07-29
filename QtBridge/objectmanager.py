@@ -82,6 +82,8 @@ class ObjectManager(QObject):
                 result = self.call_method(args, defs, keep_result = True)
             elif cmd == "connect":
                 result = self.connect(args, defs)
+            elif cmd == "rconnect":
+                result = self.remote_connect(args, defs)
             else:
                 return
         
@@ -148,7 +150,7 @@ class ObjectManager(QObject):
     
     def connect(self, args, defs):
     
-        id_, src, signal_name = args[:5]
+        id_, src, signal_name = args[:3]
         
         try:
             signal = getattr(src, signal_name)
@@ -163,6 +165,25 @@ class ObjectManager(QObject):
         
         except AttributeError:
             self.debugMessage.emit("No such signal '%s.%s'." % (src.__class__.__name__, signal))
+        
+        return None
+    
+    def remote_connect(self, args, defs):
+    
+        id_, src, signal_name, dest, slot_name = args[:5]
+        
+        try:
+            signal = getattr(src, signal_name)
+        except AttributeError:
+            self.debugMessage.emit("No such signal '%s.%s'." % (src.__class__.__name__, signal))
+        
+        try:
+            slot = getattr(dest, slot_name)
+        except AttributeError:
+            self.debugMessage.emit("No such signal '%s.%s'." % (src.__class__.__name__, signal))
+        
+        # Connect the signal to a slot on this side of the bridge.
+        signal.connect(slot)
         
         return None
     

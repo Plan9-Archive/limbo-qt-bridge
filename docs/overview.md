@@ -17,3 +17,22 @@ ADTs representing classes whose instances can be supplied as arguments to
 methods need to provide the _get_proxy() function so that their proxies can be
 obtained and sent across the bridge. This interface is our way of indicating
 that an ADT instance represents a Qt object.
+
+
+Installing the modules
+----------------------
+
+The Limbo implementation of the bridge is stored in the `modules` directory.
+The `qtwidgets.b` and `qtchannels.b` files are compiled as normal, either in
+the hosted Inferno environment or outside it using the native `limbo` compiler.
+The `qtwidgets.m` and `qtchannels.m` files are installed inside the hosted
+environment within the `module` directory.
+
+For example, if the environment variable `INFERNO_ROOT` refers to the location
+of the hosted Inferno environment, you might compile and install the modules
+at the command line with the following commands:
+
+    limbo modules/*.b
+    cp qt*.dis $INFERNO_ROOT/dis/lib/
+    cp modules/qt*.m $INFERNO_ROOT/module/
+
