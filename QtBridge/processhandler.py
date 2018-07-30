@@ -26,6 +26,7 @@ from PyQt5.QtCore import QCoreApplication, QByteArray, QObject, QProcess, \
 class ProcessHandler(QObject):
 
     commandReceived = pyqtSignal(str)
+    commandSent = pyqtSignal(str)
     processFinished = pyqtSignal()
     processError = pyqtSignal(str)
     
@@ -114,3 +115,5 @@ class ProcessHandler(QObject):
             
             # Handle the rest of the output.
             self.pendingOutput = self.pendingOutput.mid(written)
+        
+        self.commandSent.emit(message)

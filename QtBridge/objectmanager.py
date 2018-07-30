@@ -103,7 +103,6 @@ class ObjectManager(QObject):
             self.typed_value_to_string(result, defs, flags)
         
         self.messagePending.emit(message)
-        self.debugMessage.emit(message)
     
     def create(self, args, defs):
     
@@ -362,7 +361,6 @@ class ObjectManager(QObject):
             "".join(serialised_args)
         
         self.messagePending.emit(message)
-        self.debugMessage.emit(message)
     
     def dispatchEvent(self, src_name, event):
     
@@ -382,7 +380,6 @@ class ObjectManager(QObject):
             self.typed_value_to_string(event, self.names)
         
         self.messagePending.emit(message)
-        self.debugMessage.emit(message)
 
 
 class SignalReceiver(QObject):
