@@ -88,59 +88,72 @@ Channels.reader(c: self ref Channels)
 
         # Read as much as possible from stdin.
         read := sys->read(stdin, read_array, 256);
+
+        if (read == 0) {
+            debug_msg("Application's stdin closed.");
+            exit;
+        }
+
         # Convert the input to a string and append it to the current string.
         current += string read_array[:read];
 
-        ### Handle multiple commands as well as end of file.
+        # Handle multiple commands while there .
+        while (len current >= input_expected) {
 
-        if (in_message == 0) {
+            if (in_message == 0) {
 
-            # Find a number followed by a space.
-            (length, rest) := str->splitstrl(current, " ");
+                # Find a number followed by a space.
+                (length, rest) := str->splitstrl(current, " ");
 
-            # If no space is found then read again.
-            if (rest == nil)
-                continue;
+                # If no space is found then read again.
+                if (rest == nil)
+                    break;
 
-            # Convert the length string to a number.
-            input_expected = int length;
+                # Convert the length string to a number.
+                input_expected = int length;
 
-            # Examine the rest of the input.
-            current = rest[1:];
-            in_message = 1;
-        }
-
-        # Try to read the rest of the message.
-        if (len current >= input_expected) {
-
-            value_str := current[:input_expected];
-            type_, token : string;
-
-            (type_, token, value_str) = parse_arg(value_str);
-            if (type_ != "s") {
-                errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
-                fprint(sys->fildes(2), "%d %s", len errstr, errstr);
-                exit;
+                # Examine the rest of the input.
+                current = rest[1:];
+                in_message = 1;
             }
 
-            (type_, token, value_str) = parse_arg(value_str);
-            if (type_ != "i") {
-                errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
-                fprint(sys->fildes(2), "%d %s", len errstr, errstr);
-                exit;
-            }
+            # Try to read the rest of the message.
+            if (len current >= input_expected) {
 
-            ch := c.response_hash.find(int token);
-            if (ch != nil) {
-                # Send the command via the response channel.
-                ch <-= value_str;
+                value_str := current[:input_expected];
+                type_, token : string;
+
+                (type_, token, value_str) = parse_arg(value_str);
+                if (type_ != "s") {
+                    errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
+                    fprint(sys->fildes(2), "%d %s", len errstr, errstr);
+                    exit;
+                }
+
+                (type_, token, value_str) = parse_arg(value_str);
+                if (type_ != "i") {
+                    errstr := sprint("Read error: '%s' '%s' '%s'\n", type_, token, value_str);
+                    fprint(sys->fildes(2), "%d %s", len errstr, errstr);
+                    exit;
+                }
+
+                ch := c.response_hash.find(int token);
+                if (ch != nil) {
+                    # Send the command via the response channel.
+                    ch <-= value_str;
+                } else {
+                    # Send the command via the default read channel.
+                    c.read_ch <-= value_str;
+                }
+
+                current = current[input_expected:];
+                in_message = 0;
+                input_expected = 0;
+
             } else {
-                # Send the command via the default read channel.
-                c.read_ch <-= value_str;
+                # Not enough data for the message body so read again.
+                break;
             }
-
-            current = current[input_expected:];
-            in_message = 0;
         }
     }
 }
@@ -290,4 +303,10 @@ parse_args(s: string): list of string
         l = token::l;
     }
     return lists->reverse(l);
+}
+
+debug_msg(s: string)
+{
+    msg := sprint("s5 debug i4 9999 s%d '%s'", len s + 2, s);
+    sys->print("%d %s", len msg, msg);
 }

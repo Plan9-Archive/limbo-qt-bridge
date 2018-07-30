@@ -32,4 +32,6 @@ QtChannels: module
     parse_2tuple: fn(s: string): (string, string);
     parse_ntuple: fn(s: string): list of string;
     parse_args: fn(s: string): list of string;
+
+    debug_msg: fn(s: string);
 };

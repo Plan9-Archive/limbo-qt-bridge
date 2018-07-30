@@ -67,6 +67,11 @@ get_channels(): ref Channels
     return channels;
 }
 
+qdebug(s: string)
+{
+    qtchannels->debug_msg(s);
+}
+
 create(class: string, args: list of string): string
 {
     # Refer to the object using something that won't be reduced to an integer
@@ -112,24 +117,6 @@ call_value(proxy, method: string, args: list of string, unpack_names: list of st
         flags += "," + (hd unpack_names);
 
     return channels.request(enc_str("call"), enc_str(flags)::enc(proxy, "I")::enc_str(method)::args);
-}
-
-# Utility functions
-
-quote(s: string): string
-{
-    return sprint("\"%s\"", s);
-}
-
-unquote(s: string): string
-{
-    return s[1:len(s) - 1];
-}
-
-debug_msg(s: string)
-{
-    msg := sprint("s5 debug i4 9999 s%d '%s'", len s + 2, s);
-    sys->print("%d %s", len msg, msg);
 }
 
 # Signal-slot connection and dispatch

@@ -2,7 +2,7 @@ include "qtchannels.m";
     qtchannels: QtChannels;
     Channels, enc, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
     parse_arg, dec_str, dec_int: import qtchannels;
-    parse_2tuple, parse_ntuple, parse_args: import qtchannels;
+    parse_2tuple, parse_ntuple, parse_args, debug_msg: import qtchannels;
 
 QtWidgets: module
 {
@@ -24,9 +24,9 @@ QtWidgets: module
     init: fn();
     get_channels: fn(): ref Channels;
 
-    create: fn(class: string, args: list of string): string;
+    qdebug: fn(s: string);
 
-    debug_msg: fn(s: string);
+    create: fn(class: string, args: list of string): string;
 
     connect: fn[T](src: T, signal: string, slot: Invokable)
         for { T => _get_proxy: fn(w: self T): string; };
