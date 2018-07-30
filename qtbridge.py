@@ -84,6 +84,7 @@ if __name__ == "__main__":
     if debug:
         processHandler.commandReceived.connect(input_text)
         objectManager.debugMessage.connect(output_text)
+        processHandler.commandSent.connect(output_text)
     
     processHandler.commandReceived.connect(objectManager.handleCommand)
     objectManager.messagePending.connect(processHandler.handleOutput)
