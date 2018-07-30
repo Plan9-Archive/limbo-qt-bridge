@@ -1,4 +1,4 @@
-# painting.b
+# resizeevents.b
 #
 # Written in 2018 by David Boddie <david@boddie.org.uk>
 #
@@ -11,7 +11,7 @@
 
 # Tests an integration bridge between Limbo and Qt.
 
-implement Painting;
+implement ResizeEvents;
 
 # Import modules to be used and declare any instances that will be accessed
 # globally.
@@ -24,12 +24,14 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QColor, QLabel, QPainter, QPixmap, QWidget: import qt;
+    QApplication, QColor, QLabel, QResizeEvent, filter_event, debug_msg: import qt;
 
-Painting: module
+ResizeEvents: module
 {
     init: fn(ctxt: ref Draw->Context, args: list of string);
 };
+
+window: ref QLabel;
 
 # Main function and stream handling functions
 
@@ -42,19 +44,21 @@ init(ctxt: ref Draw->Context, args: list of string)
     qt->init();
     app := QApplication.new();
 
-    pixmap := QPixmap.new(400, 400);
-    pixmap.fill(QColor(240, 160, 100, 255));
+    window = QLabel.new();
 
-    painter := QPainter.new();
-    painter.begin(pixmap);
-    painter.drawText(150, 180, "Hello Limbo!");
-    painter.end();
+    filter_event(window, QResizeEvent.Type, resizeEvent);
 
-    label := QLabel.new();
-    label.setPixmap(pixmap);
-
-    QWidget._setWindowTitle(label, "Limbo to Qt Bridge Painting Demonstration");
-    QWidget._show(label);
+    window.setWindowTitle("Limbo to Qt Bridge Paint Events Demonstration");
+    window.resize(400, 400);
+    window.show();
 
     for (;;) {}
+}
+
+resizeEvent(proxy: string)
+{
+    event := ref QResizeEvent(proxy);
+    (w, h) := window.size();
+
+    window.setText(sprint("%dx%d", w, h));
 }

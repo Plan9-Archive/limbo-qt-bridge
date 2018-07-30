@@ -51,7 +51,15 @@ init()
     signal_ch := chan of string;
     channels.response_hash.add(0, signal_ch);
 
-    spawn dispatcher(signal_ch);
+    # Keep a record of event handlers.
+    event_hash = Strhash[EventHandler].new(23, nil);
+
+    # Register a channel to receive notifications about events.
+    event_ch := chan of string;
+    channels.response_hash.add(1, event_ch);
+
+    spawn signal_dispatcher(signal_ch);
+    spawn event_dispatcher(event_ch);
 }
 
 get_channels(): ref Channels
@@ -142,7 +150,7 @@ connect[T](src: T, signal: string, slot: Invokable)
     signal_hash.add(proxy + " " + signal, l);
 }
 
-dispatcher(signal_ch: chan of string)
+signal_dispatcher(signal_ch: chan of string)
 {
     for (;;) alt {
         s := <- signal_ch =>
@@ -172,6 +180,42 @@ rconnect[T,U](src: T, signal: string, dest: U, slot: string)
 {
     channels.request(enc_str("rconnect"),
         enc_inst(src)::enc_str(signal)::enc_inst(dest)::enc_str(slot)::nil);
+}
+
+# Event filter creation and dispatch
+
+filter_event[T](src: T, event_type: int, handler: EventHandler)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    channels.request(enc_str("filter"), enc_inst(src)::enc_int(event_type)::nil);
+
+    # Register the handler.
+    proxy := src._get_proxy();
+    key := src._get_proxy() + " " + (string event_type);
+    if (event_hash.find(key) == nil)
+        event_hash.add(key, handler);
+}
+
+event_dispatcher(event_ch: chan of string)
+{
+    for (;;) alt {
+        s := <- event_ch =>
+            # Split the key (the first two words in the reply) from the event
+            # argument.
+            type_, src, event_type : string;
+
+            (type_, src, s) = parse_arg(s);
+            (type_, event_type, s) = parse_arg(s);
+            key := src + " " + event_type;
+
+            # Find the event handler in the hash and call it with the proxy
+            # string for the event.
+            event_handler := event_hash.find(key);
+            proxy := dec_str(s);
+
+            if (event_handler != nil)
+                event_handler(proxy);
+    }
 }
 
 # Proxy classes
@@ -332,6 +376,11 @@ QLabel.new(): ref QLabel
     return ref QLabel(proxy);
 }
 
+QLabel.resize(w: self ref QLabel, width, height: int)
+{
+    QWidget._resize(w, width, height);
+}
+
 QLabel.setAlignment(w: self ref QLabel, alignment: int)
 {
     call(w.proxy, "setAlignment", enc_enum("Alignment", alignment)::nil);
@@ -346,6 +395,21 @@ QLabel.setPixmap[T](w: self ref QLabel, pixmap: T)
 QLabel.setText(w: self ref QLabel, text: string)
 {
     call(w.proxy, "setText", enc_str(text)::nil);
+}
+
+QLabel.setWindowTitle(w: self ref QLabel, title: string)
+{
+    QWidget._setWindowTitle(w, title);
+}
+
+QLabel.show(w: self ref QLabel)
+{
+    QWidget._show(w);
+}
+
+QLabel.size(w: self ref QLabel): (int, int)
+{
+    return QWidget._size(w);
 }
 
 QMainWindow._get_proxy(w: self ref QMainWindow): string
@@ -452,6 +516,23 @@ QPainter.setPen(w: self ref QPainter, pen: QPen)
     call(w.proxy, "setPen", pen.enc()::nil);
 }
 
+QPaintEvent._get_event(proxy: string): ref QPaintEvent
+{
+    return ref QPaintEvent(proxy);
+}
+
+QPaintEvent.rect(e: self ref QPaintEvent): (int, int, int, int)
+{
+    value := call_value(e.proxy, "rect", nil, "x"::"y"::"width"::"height"::nil);
+
+    l := parse_ntuple(value);
+    x := int hd l; l = tl l;
+    y := int hd l; l = tl l;
+    w := int hd l; l = tl l;
+    h := int hd l;
+    return (x, y, w, h);
+}
+
 QPen.enc(w: self QPen): string
 {
     return enc_value("QPen", w.color.enc()::nil);
@@ -493,6 +574,25 @@ QRadioButton.new(text: string): ref QRadioButton
 {
     proxy := create("QRadioButton", enc_str(text)::nil);
     return ref QRadioButton(proxy);
+}
+
+QResizeEvent._get_event(proxy: string): ref QResizeEvent
+{
+    return ref QResizeEvent(proxy);
+}
+
+QResizeEvent.oldSize(e: self ref QResizeEvent): (int, int)
+{
+    value := call_value(e.proxy, "oldSize", nil, "width"::"height"::nil);
+    (w, h) := parse_2tuple(value);
+    return (int w, int h);
+}
+
+QResizeEvent.size(e: self ref QResizeEvent): (int, int)
+{
+    value := call_value(e.proxy, "size", nil, "width"::"height"::nil);
+    (w, h) := parse_2tuple(value);
+    return (int w, int h);
 }
 
 QTextEdit._get_proxy(w: self ref QTextEdit): string
@@ -579,6 +679,12 @@ QWidget._size[T](w: T): (int, int)
     return (width, height);
 }
 
+QWidget._update[T](w: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w._get_proxy(), "update", nil);
+}
+
 QWidget.new(): ref QWidget
 {
     proxy := create("QWidget", nil);
@@ -614,4 +720,9 @@ QWidget.show(w: self ref QWidget)
 QWidget.size(w: self ref QWidget): (int, int)
 {
     return QWidget._size(w);
+}
+
+QWidget.update(w: self ref QWidget)
+{
+    QWidget._update(w);
 }

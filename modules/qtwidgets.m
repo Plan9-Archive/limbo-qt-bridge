@@ -16,7 +16,10 @@ QtWidgets: module
     tr_counter : int;
 
     Invokable: type ref fn(args: list of string);
+    EventHandler: type ref fn(proxy: string);
+
     signal_hash : ref Strhash[list of Invokable];
+    event_hash : ref Strhash[EventHandler];
 
     init: fn();
     get_channels: fn(): ref Channels;
@@ -28,11 +31,12 @@ QtWidgets: module
     connect: fn[T](src: T, signal: string, slot: Invokable)
         for { T => _get_proxy: fn(w: self T): string; };
 
-    dispatcher: fn(signal_ch: chan of string);
-
     rconnect: fn[T,U](src: T, signal: string, dest: U, slot: string)
         for { T => _get_proxy: fn(w: self T): string;
               U => _get_proxy: fn(w: self U): string; };
+
+    filter_event: fn[T](src: T, event_type: int, handler: EventHandler)
+        for { T => _get_proxy: fn(w: self T): string; };
 
     Qt: adt {
         AlignLeft, AlignRight, AlignHCenter, AlignJustify, AlignAbsolute: con (1 << iota);
@@ -124,10 +128,14 @@ QtWidgets: module
         _get_proxy: fn(w: self ref QLabel): string;
 
         new: fn(): ref QLabel;
+        resize: fn(w: self ref QLabel, width, height: int);
         setAlignment: fn(w: self ref QLabel, alignment: int);
         setPixmap: fn[T](w: self ref QLabel, pixmap: T)
             for { T => _get_proxy: fn(w: self T): string; };
         setText: fn(w: self ref QLabel, text: string);
+        setWindowTitle: fn(w: self ref QLabel, text: string);
+        show: fn(w: self ref QLabel);
+        size: fn(w: self ref QLabel): (int, int);
     };
 
     QMainWindow: adt {
@@ -171,6 +179,14 @@ QtWidgets: module
         setPen: fn(w: self ref QPainter, brush: QPen);
     };
 
+    QPaintEvent: adt {
+        proxy: string;
+        Type: con 12;
+
+        _get_event: fn(proxy: string): ref QPaintEvent;
+        rect: fn(e: self ref QPaintEvent): (int, int, int, int);
+    };
+
     QPen: adt {
         color: QColor;
         enc: fn(w: self QPen): string;
@@ -196,6 +212,15 @@ QtWidgets: module
         _get_proxy: fn(w: self ref QRadioButton): string;
 
         new: fn(text: string): ref QRadioButton;
+    };
+
+    QResizeEvent: adt {
+        proxy: string;
+        Type: con 14;
+
+        _get_event: fn(proxy: string): ref QResizeEvent;
+        oldSize: fn(e: self ref QResizeEvent): (int, int);
+        size: fn(e: self ref QResizeEvent): (int, int);
     };
 
     QTextEdit: adt {
@@ -235,6 +260,8 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         _size: fn[T](w: T): (int, int)
             for { T => _get_proxy: fn(w: self T): string; };
+        _update: fn[T](w: T)
+            for { T => _get_proxy: fn(w: self T): string; };
 
         new: fn(): ref QWidget;
         close: fn(w: self ref QWidget);
@@ -244,5 +271,6 @@ QtWidgets: module
         setWindowTitle: fn(w: self ref QWidget, title: string);
         show: fn(w: self ref QWidget);
         size: fn(w: self ref QWidget): (int, int);
+        update: fn(w: self ref QWidget);
     };
 };

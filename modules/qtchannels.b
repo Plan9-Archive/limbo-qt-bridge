@@ -68,11 +68,11 @@ Channels.get(c: self ref Channels): (int, chan of string)
 
     c.counter = (c.counter + 1) % 1024;
     
-    # Internally, the identifier 0 is reserved for signals, so use values from
-    # 1 to 1024 for other messages.
-    c.response_hash.add(c.counter + 1, response_ch);
+    # Internally, the identifier 0 is reserved for signals and 1 for events, so
+    # use values from 2 to 1024 for other messages.
+    c.response_hash.add(c.counter + 2, response_ch);
 
-    return (c.counter + 1, response_ch);
+    return (c.counter + 2, response_ch);
 }
 
 Channels.reader(c: self ref Channels)

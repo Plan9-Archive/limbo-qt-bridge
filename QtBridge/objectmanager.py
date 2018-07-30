@@ -48,6 +48,7 @@ class ObjectManager(QObject):
                     pass
         
         self.objects = {}
+        self.filters = {}
         self.names = {}
         self.counter = 0
     
@@ -58,6 +59,7 @@ class ObjectManager(QObject):
         # call      <id> <flags>  <object> <method> <args>...
         # connect   <id> <src>    <signal>
         # rconnect  <id> <src>    <signal> <dest>   <slot>
+        # filter    <id> <object> <event type>
         
         space = command.find(" ")
         if space == -1:
@@ -85,6 +87,8 @@ class ObjectManager(QObject):
                 result = self.connect(args, defs)
             elif cmd == "rconnect":
                 result = self.remote_connect(args, defs)
+            elif cmd == "filter":
+                result = self.filter_object(args, defs)
             else:
                 return
         
@@ -192,6 +196,21 @@ class ObjectManager(QObject):
         
         # Connect the signal to a slot on this side of the bridge.
         signal.connect(slot)
+        
+        return None
+    
+    def filter_object(self, args, defs):
+    
+        id_, obj, event_type = args[:3]
+        
+        # Create a filter object for the object if one does not already exist.
+        try:
+            filter_obj = self.filters[obj]
+        except KeyError:
+            filter_obj = FilterObject(defs[obj], self)
+            filter_obj.addEventType(event_type)
+            self.filters[obj] = filter_obj
+            obj.installEventFilter(filter_obj)
         
         return None
     
@@ -335,11 +354,32 @@ class ObjectManager(QObject):
         for arg in args:
             serialised_args.append(self.typed_value_to_string(arg, self.names))
         
+        # Send a message with id = 0 to indicate that it is a signal.
         message = self.typed_value_to_string("signal") + \
             self.typed_value_to_string(0) + \
             self.typed_value_to_string(src_name) + \
             self.typed_value_to_string(signal_name) + \
             "".join(serialised_args)
+        
+        self.messagePending.emit(message)
+        self.debugMessage.emit(message)
+    
+    def dispatchEvent(self, src_name, event):
+    
+        # Store the event in the object dictionary using a name derived from
+        # the source object and the event type. This should yield a unique name
+        # until the next time the same type of event is dispatched for the
+        # same object. We could use the filter object instead of the object.
+        key = src_name + "_event_" + str(event.type())
+        self.objects[key] = event
+        self.names[event] = key
+        
+        # Send a message with id = 1 to indicate that it is an event.
+        message = self.typed_value_to_string("event") + \
+            self.typed_value_to_string(1) + \
+            self.typed_value_to_string(src_name) + \
+            self.typed_value_to_string(int(event.type())) + \
+            self.typed_value_to_string(event, self.names)
         
         self.messagePending.emit(message)
         self.debugMessage.emit(message)
@@ -358,3 +398,34 @@ class SignalReceiver(QObject):
     def dispatch(self, *args):
     
         self.objectManager.dispatchSignal(self.src_name, self.signal, args)
+
+
+class FilterObject(QObject):
+
+    def __init__(self, obj_name, objectManager):
+    
+        QObject.__init__(self, objectManager)
+        
+        self.obj_name = obj_name
+        self.events = set()
+        self.objectManager = objectManager
+    
+    def eventFilter(self, obj, event):
+    
+        if int(event.type()) in self.events:
+        
+            # For some events to be useful, we need to create copies of them
+            # to prevent taking a reference to a data structure that will be
+            # modified and invalidated. Perhaps it isn't useful to transmit
+            # the event object itself, only the event type.
+            if event.type() == QtCore.QEvent.Resize:
+                event = QtGui.QResizeEvent(event.size(), event.oldSize());
+            
+            self.objectManager.dispatchEvent(self.obj_name, event)
+            return True
+        
+        return False
+    
+    def addEventType(self, event_type):
+    
+        self.events.add(event_type)
