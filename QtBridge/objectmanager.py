@@ -48,14 +48,16 @@ class ObjectManager(QObject):
                     pass
         
         self.objects = {}
+        self.names = {}
         self.counter = 0
     
     def handleCommand(self, command):
     
         # create    <id> <name>   <type>   <args>...
         # forget    <id> <name>
-        # call      <id> <flags> <object> <method> <args>...
+        # call      <id> <flags>  <object> <method> <args>...
         # connect   <id> <src>    <signal>
+        # rconnect  <id> <src>    <signal> <dest>   <slot>
         
         space = command.find(" ")
         if space == -1:
@@ -106,6 +108,7 @@ class ObjectManager(QObject):
         try:
             obj = class_(*tuple(method_args))
             self.objects[name] = obj
+            self.names[obj] = name
             return name
         except:
             return None
@@ -115,7 +118,9 @@ class ObjectManager(QObject):
         id_, name = args[:2]
         
         try:
+            obj = self.objects[name]
             del self.objects[name]
+            del self.names[obj]
         except:
             return None
     
@@ -140,6 +145,7 @@ class ObjectManager(QObject):
             if keep_result:
                 name = "%s_%i_rv" % (value.__class__.__name__, self.counter)
                 self.objects[name] = value
+                self.names[value] = name
                 self.counter = (self.counter + 1) & 0xffffffff
                 return name
             
@@ -255,7 +261,7 @@ class ObjectManager(QObject):
         elif type_ == "I" and arg in self.objects:
             # Instance
             obj = self.objects[arg]
-            defs[obj] = arg
+            self.names[obj] = defs[obj] = arg
             return obj
         
         elif type_ == "C" and arg in self.classes:
@@ -325,8 +331,10 @@ class ObjectManager(QObject):
     
     def dispatchSignal(self, src_name, signal_name, args):
     
-        # Find the name of the sender.
-        serialised_args = map(self.typed_value_to_string, args)
+        serialised_args = []
+        for arg in args:
+            serialised_args.append(self.typed_value_to_string(arg, self.names))
+        
         message = self.typed_value_to_string("signal") + \
             self.typed_value_to_string(0) + \
             self.typed_value_to_string(src_name) + \

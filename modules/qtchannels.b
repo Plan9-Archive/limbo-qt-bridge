@@ -274,11 +274,19 @@ parse_2tuple(s: string): (string, string)
 
 parse_ntuple(s: string): list of string
 {
-    l: list of string;
     type_, contents, token: string;
+
     (type_, contents, s) = parse_arg(s);
-    while (contents != nil) {
-        (type_, token, contents) = parse_arg(contents);
+    return parse_args(contents);
+}
+
+parse_args(s: string): list of string
+{
+    l: list of string;
+    type_, token: string;
+
+    while (s != nil) {
+        (type_, token, s) = parse_arg(s);
         l = token::l;
     }
     return lists->reverse(l);

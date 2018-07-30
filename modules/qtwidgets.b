@@ -157,9 +157,10 @@ dispatcher(signal_ch: chan of string)
             # Find the list of slots in the hash and call each of them with the
             # list of arguments.
             slots := signal_hash.find(key);
+            args := parse_args(s);
 
             for (; slots != nil; slots = tl slots)
-                (hd slots)(str->unquoted(s));
+                (hd slots)(args);
     }
 }
 

@@ -1,7 +1,8 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
     Channels, enc, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
-    parse_arg, dec_str, dec_int, parse_2tuple, parse_ntuple: import qtchannels;
+    parse_arg, dec_str, dec_int: import qtchannels;
+    parse_2tuple, parse_ntuple, parse_args: import qtchannels;
 
 QtWidgets: module
 {
