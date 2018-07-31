@@ -28,7 +28,7 @@ include "string.m";
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QAction, QFileDialog, QMainWindow, QMenu, QMenuBar: import qt;
-    QTextEdit, connect, Invokable, debug_msg: import qt;
+    QTextEdit, connect, Invokable: import qt;
 
 Widgets: module
 {
