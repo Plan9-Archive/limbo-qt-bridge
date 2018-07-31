@@ -24,7 +24,7 @@ include "draw.m";
 
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QColor, QLabel, QResizeEvent, filter_event, debug_msg: import qt;
+    QApplication, QColor, QLabel, QResizeEvent, filter_event: import qt;
 
 ResizeEvents: module
 {
@@ -51,14 +51,12 @@ init(ctxt: ref Draw->Context, args: list of string)
     window.setWindowTitle("Limbo to Qt Bridge Paint Events Demonstration");
     window.resize(400, 400);
     window.show();
-
-    for (;;) {}
 }
 
 resizeEvent(proxy: string)
 {
     event := ref QResizeEvent(proxy);
-    (w, h) := window.size();
+    (w, h) := event.size();
 
     window.setText(sprint("%dx%d", w, h));
 }

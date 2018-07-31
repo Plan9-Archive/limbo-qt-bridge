@@ -200,8 +200,16 @@ event_dispatcher(event_ch: chan of string)
             event_handler := event_hash.find(key);
             proxy := dec_str(s);
 
-            if (event_handler != nil)
+            # Call the handler, passing a proxy string for the event so that
+            # it can be accessed. The Qt side of the bridge will queue pending
+            # events until the event is deleted, which occurs when we call
+            # forget. This avoids the situation where another event arrives
+            # while one is being processed and cause the message reader to
+            # block because this qualifier is still active.
+            if (event_handler != nil) {
                 event_handler(proxy);
+                forget(proxy);
+            }
     }
 }
 

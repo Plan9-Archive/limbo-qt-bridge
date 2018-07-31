@@ -50,6 +50,8 @@ class ObjectManager(QObject):
         self.objects = {}
         self.filters = {}
         self.names = {}
+        self.event_queue = []
+        self.pending_events = set()
         self.counter = 0
     
     def handleCommand(self, command):
@@ -124,6 +126,20 @@ class ObjectManager(QObject):
             obj = self.objects[name]
             del self.objects[name]
             del self.names[obj]
+            
+            # If the object being deleted is an event then look up its queue
+            # in the pending events dictionary.
+            if name in self.pending_events:
+            
+                # Remove the event from the set of pending events.
+                self.pending_events.remove(name)
+                
+                # Remove the first event object from the list of pending events.
+                # This should have already been dispatched.
+                self.event_queue.pop(0)
+                
+                # Dispatch the next pending event for this object and type.
+                self.dispatchEvent(name)
         except:
             return None
     
@@ -362,15 +378,32 @@ class ObjectManager(QObject):
         
         self.messagePending.emit(message)
     
-    def dispatchEvent(self, src_name, event):
+    def queueEvent(self, src_name, event):
     
+        etype = int(event.type())
+        name = "%s_event_%i" % (src_name, etype)
+        
+        # Put this event in a queue for events of this type for this object.
+        self.pending_events.add(name)
+        self.event_queue.append((src_name, event))
+        
+        # Try to dispatch the event.
+        self.dispatchEvent(name)
+    
+    def dispatchEvent(self, event_obj_name):
+    
+        # If there is more than one queue event then defer dispatch until later.
+        if len(self.event_queue) != 1:
+            return
+        
+        src_name, event = self.event_queue[0]
+        
         # Store the event in the object dictionary using a name derived from
         # the source object and the event type. This should yield a unique name
         # until the next time the same type of event is dispatched for the
-        # same object. We could use the filter object instead of the object.
-        key = src_name + "_event_" + str(event.type())
-        self.objects[key] = event
-        self.names[event] = key
+        # same object.
+        self.objects[event_obj_name] = event
+        self.names[event] = event_obj_name
         
         # Send a message with id = 1 to indicate that it is an event.
         message = self.typed_value_to_string("event") + \
@@ -418,7 +451,7 @@ class FilterObject(QObject):
             if event.type() == QtCore.QEvent.Resize:
                 event = QtGui.QResizeEvent(event.size(), event.oldSize());
             
-            self.objectManager.dispatchEvent(self.obj_name, event)
+            self.objectManager.queueEvent(self.obj_name, event)
             return True
         
         return False
