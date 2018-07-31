@@ -190,12 +190,10 @@ Channels.writer(c: self ref Channels)
 Channels.request(c: self ref Channels, action: string, args: list of string): string
 {
     # Obtain a channel to use to receive a response.
-    (key, response_ch) := c.get();
-    key_string := string key;
-    key_string = "i" + (string len key_string) + " " + key_string + " ";
+    (id_, response_ch) := c.get();
 
     # Send the call request and receive the response.
-    message := sprint("%s%s", action, key_string);
+    message := sprint("%s%s", action, enc_int(id_));
     for (; args != nil; args = tl args)
         message += hd args;
 
@@ -206,7 +204,7 @@ Channels.request(c: self ref Channels, action: string, args: list of string): st
     value := <- response_ch;
 
     # Delete the entry for the response in the response hash.
-    c.response_hash.del(key);
+    c.response_hash.del(id_);
 
     return value;
 }

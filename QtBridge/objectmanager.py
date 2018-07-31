@@ -50,6 +50,7 @@ class ObjectManager(QObject):
         self.objects = {}
         self.filters = {}
         self.names = {}
+        self.pending_signals = {}
         self.event_queue = []
         self.pending_events = set()
         self.counter = 0
@@ -62,6 +63,7 @@ class ObjectManager(QObject):
         # connect   <id> <src>    <signal>
         # rconnect  <id> <src>    <signal> <dest>   <slot>
         # filter    <id> <object> <event type>
+        # process   <id>
         
         space = command.find(" ")
         if space == -1:
@@ -91,6 +93,8 @@ class ObjectManager(QObject):
                 result = self.remote_connect(args, defs)
             elif cmd == "filter":
                 result = self.filter_object(args, defs)
+            elif cmd == "process":
+                result = self.process(args, defs)
             else:
                 return
         
@@ -229,6 +233,21 @@ class ObjectManager(QObject):
         
         return None
     
+    def process(self, args, defs):
+    
+        id_ = args[0]
+        
+        # Indicate that the signal associated with an identifier has been
+        # processed.
+        try:
+            pending = self.pending_signals[id_]
+            pending.pop(0)
+            self.dispatchSignal(id_)
+        except KeyError:
+            pass
+        
+        return None
+    
     def parse_arguments(self, text):
     
         # Create an empty list to fill with arguments and a dictionary mapping
@@ -363,11 +382,27 @@ class ObjectManager(QObject):
         if not self.debug:
             self.finished.emit()
     
-    def dispatchSignal(self, id_, args):
+    def queueSignal(self, id_, args):
     
         serialised_args = []
         for arg in args:
             serialised_args.append(self.typed_value_to_string(arg, self.names))
+        
+        # Put this signal in a queue for the given identifier.
+        pending = self.pending_signals.setdefault(id_, [])
+        pending.append(serialised_args)
+        
+        # Try to dispatch the signal.
+        self.dispatchSignal(id_)
+    
+    def dispatchSignal(self, id_):
+    
+        # If there is more than one queued signal then defer dispatch until later.
+        pending = self.pending_signals[id_]
+        if len(pending) != 1:
+            return
+        
+        serialised_args = pending[0]
         
         message = self.typed_value_to_string("signal") + \
             self.typed_value_to_string(id_) + \
@@ -380,7 +415,7 @@ class ObjectManager(QObject):
         etype = int(event.type())
         name = "%s_event_%i" % (src_name, etype)
         
-        # Put this event in a queue for events of this type for this object.
+        # Put this event in a queue.
         self.pending_events.add(name)
         self.event_queue.append((src_name, event))
         
@@ -389,7 +424,7 @@ class ObjectManager(QObject):
     
     def dispatchEvent(self, event_obj_name):
     
-        # If there is more than one queue event then defer dispatch until later.
+        # If there is more than one queued event then defer dispatch until later.
         if len(self.event_queue) != 1:
             return
         
@@ -423,7 +458,7 @@ class SignalReceiver(QObject):
     
     def dispatch(self, *args):
     
-        self.objectManager.dispatchSignal(self.id_, args)
+        self.objectManager.queueSignal(self.id_, args)
 
 
 class FilterObject(QObject):

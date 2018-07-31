@@ -119,12 +119,10 @@ connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     # Obtain a channel to use to receive a response.
-    (key, response_ch) := channels.get();
-    key_string := string key;
-    key_string = "i" + (string len key_string) + " " + key_string + " ";
+    (id_, response_ch) := channels.get();
 
     # Send the call request and receive the response.
-    message := enc_str("connect") + key_string + enc_inst(src) + enc_str(signal);
+    message := enc_str("connect") + enc_int(id_) + enc_inst(src) + enc_str(signal);
     message[len message - 1] = '\n';
 
     channels.write_ch <-= message;
@@ -132,15 +130,19 @@ connect[T](src: T, signal: string, slot: Invokable)
     # will be to receive a signal.
     value := <- response_ch;
 
-    spawn signal_dispatcher(response_ch, slot);
+    spawn signal_dispatcher(id_, response_ch, slot);
 }
 
-signal_dispatcher(signal_ch: chan of string, slot: Invokable)
+signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
 {
     for (;;) alt {
         s := <- signal_ch =>
+
             args := parse_args(s);
             slot(args);
+
+            # Inform Qt that the signal has been processed.
+            channels.request(enc_str("process"), enc_int(id_)::nil);
     }
 }
 
