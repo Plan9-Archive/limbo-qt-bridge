@@ -16,7 +16,8 @@ QtChannels: module
         get: fn(c: self ref Channels): (int, chan of string);
         reader: fn(c: self ref Channels);
         writer: fn(c: self ref Channels);
-        request: fn(c: self ref Channels, action: string, args: list of string): string;
+        request: fn(c: self ref Channels, action: string, args: list of string,
+                    return_value_expected: int): string;
     };
 
     enc: fn(s, t: string): string;

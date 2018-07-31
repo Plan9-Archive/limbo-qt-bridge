@@ -33,6 +33,8 @@ include "string.m";
 
 include "qtwidgets.m";
 
+NoReturnValue, ReturnValue : con iota;
+
 init()
 {
     qtchannels = load QtChannels "/dis/lib/qtchannels.dis";
@@ -42,18 +44,6 @@ init()
 
     channels = Channels.init();
     tr_counter = 0;
-
-    # Keep a record of signal-slot connections.
-    signal_hash = Strhash[list of Invokable].new(23, nil);
-
-    # Keep a record of event handlers.
-    event_hash = Strhash[EventHandler].new(23, nil);
-
-    # Register a channel to receive notifications about events.
-    event_ch := chan of string;
-    channels.response_hash.add(1, event_ch);
-
-    spawn event_dispatcher(event_ch);
 }
 
 get_channels(): ref Channels
@@ -71,7 +61,8 @@ create(class: string, args: list of string): string
     # Refer to the object using something that won't be reduced to an integer
     # because the Qt bridge uses a dictionary mapping strings to objects.
     proxy := sys->sprint("%s_%x", class, tr_counter);
-    channels.request(enc_str("create"), enc(proxy, "s")::enc(class, "C")::args);
+    channels.request(enc_str("create"),
+        enc(proxy, "s")::enc(class, "C")::args, NoReturnValue);
     tr_counter = (tr_counter + 1) & 16r0fffffff;
 
     return proxy;
@@ -79,27 +70,31 @@ create(class: string, args: list of string): string
 
 forget(proxy: string)
 {
-    channels.request(enc_str("forget"), enc_str(proxy)::nil);
+    channels.request(enc_str("forget"), enc_str(proxy)::nil, NoReturnValue);
 }
 
 call(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc_str("")::enc(proxy, "I")::enc_str(method)::args);
+    return channels.request(enc_str("call"),
+        enc_str("")::enc(proxy, "I")::enc_str(method)::args, ReturnValue);
 }
 
 call_static(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc_str("")::enc(proxy, "C")::enc_str(method)::args);
+    return channels.request(enc_str("call"),
+        enc_str("")::enc(proxy, "C")::enc_str(method)::args, ReturnValue);
 }
 
 call_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc_str("k")::enc(proxy, "I")::enc_str(method)::args);
+    return channels.request(enc_str("call"),
+        enc_str("k")::enc(proxy, "I")::enc_str(method)::args, ReturnValue);
 }
 
 call_static_keep(proxy, method: string, args: list of string): string
 {
-    return channels.request(enc_str("call"), enc_str("k")::enc(proxy, "C")::enc_str(method)::args);
+    return channels.request(enc_str("call"),
+        enc_str("k")::enc(proxy, "C")::enc_str(method)::args, ReturnValue);
 }
 
 call_value(proxy, method: string, args: list of string, unpack_names: list of string): string
@@ -110,7 +105,8 @@ call_value(proxy, method: string, args: list of string, unpack_names: list of st
     for (; unpack_names != nil; unpack_names = tl unpack_names)
         flags += "," + (hd unpack_names);
 
-    return channels.request(enc_str("call"), enc_str(flags)::enc(proxy, "I")::enc_str(method)::args);
+    return channels.request(enc_str("call"),
+        enc_str(flags)::enc(proxy, "I")::enc_str(method)::args, ReturnValue);
 }
 
 # Signal-slot connection and dispatch
@@ -126,6 +122,7 @@ connect[T](src: T, signal: string, slot: Invokable)
     message[len message - 1] = '\n';
 
     channels.write_ch <-= message;
+
     # Read and discard the response. The next time this channel will be used it
     # will be to receive a signal.
     value := <- response_ch;
@@ -142,7 +139,7 @@ signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
             slot(args);
 
             # Inform Qt that the signal has been processed.
-            channels.request(enc_str("process"), enc_int(id_)::nil);
+            channels.request(enc_str("process"), enc_int(id_)::nil, NoReturnValue);
     }
 }
 
@@ -153,7 +150,8 @@ rconnect[T,U](src: T, signal: string, dest: U, slot: string)
           U => _get_proxy: fn(w: self U): string; }
 {
     channels.request(enc_str("rconnect"),
-        enc_inst(src)::enc_str(signal)::enc_inst(dest)::enc_str(slot)::nil);
+        enc_inst(src)::enc_str(signal)::enc_inst(dest)::enc_str(slot)::nil,
+        ReturnValue);
 }
 
 # Event filter creation and dispatch
@@ -161,42 +159,35 @@ rconnect[T,U](src: T, signal: string, dest: U, slot: string)
 filter_event[T](src: T, event_type: int, handler: EventHandler)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    channels.request(enc_str("filter"), enc_inst(src)::enc_int(event_type)::nil);
+    # Obtain a channel to use to receive a response.
+    (id_, response_ch) := channels.get();
 
-    # Register the handler.
-    proxy := src._get_proxy();
-    key := src._get_proxy() + " " + (string event_type);
-    if (event_hash.find(key) == nil)
-        event_hash.add(key, handler);
+    # Send the call request and receive the response.
+    message := enc_str("filter") + enc_int(id_) + enc_inst(src) + enc_int(event_type);
+    message[len message - 1] = '\n';
+
+    channels.write_ch <-= message;
+
+    # Read and discard the response. The next time this channel will be used it
+    # will be to receive an event.
+    value := <- response_ch;
+
+    spawn event_dispatcher(id_, response_ch, handler);
 }
 
-event_dispatcher(event_ch: chan of string)
+event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
 {
     for (;;) alt {
         s := <- event_ch =>
-            # Split the key (the first two words in the reply) from the event
-            # argument.
-            type_, src, event_type : string;
-
-            (type_, src, s) = parse_arg(s);
-            (type_, event_type, s) = parse_arg(s);
-            key := src + " " + event_type;
-
-            # Find the event handler in the hash and call it with the proxy
-            # string for the event.
-            event_handler := event_hash.find(key);
-            proxy := dec_str(s);
-
             # Call the handler, passing a proxy string for the event so that
             # it can be accessed. The Qt side of the bridge will queue pending
-            # events until the event is deleted, which occurs when we call
-            # forget. This avoids the situation where another event arrives
-            # while one is being processed and cause the message reader to
-            # block because this qualifier is still active.
-            if (event_handler != nil) {
-                event_handler(proxy);
-                forget(proxy);
-            }
+            # events with the identifier until the event is deleted, which
+            # occurs when we call forget. This avoids the situation where
+            # another event arrives while one is being processed, causing the
+            # message reader to block because this qualifier is still active.
+            proxy := dec_str(s);
+            handler(proxy);
+            forget(proxy);
     }
 }
 

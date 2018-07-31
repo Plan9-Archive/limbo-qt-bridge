@@ -30,6 +30,8 @@ class ObjectManager(QObject):
     debugMessage = pyqtSignal(str)
     finished = pyqtSignal()
     
+    NoReturnValue = object()
+    
     def __init__(self, parent = None, debug = False):
     
         QObject.__init__(self, parent)
@@ -51,8 +53,7 @@ class ObjectManager(QObject):
         self.filters = {}
         self.names = {}
         self.pending_signals = {}
-        self.event_queue = []
-        self.pending_events = set()
+        self.pending_events = {}
         self.counter = 0
     
     def handleCommand(self, command):
@@ -103,12 +104,14 @@ class ObjectManager(QObject):
                                    cmd, repr(args)))
             return
         
-        # Send the return value of the method call.
-        message = self.typed_value_to_string("value") + \
-            self.typed_value_to_string(id_) + \
-            self.typed_value_to_string(result, defs, flags)
+        if result != self.NoReturnValue:
         
-        self.messagePending.emit(message)
+            # Send the return value of the method call.
+            message = self.typed_value_to_string("value") + \
+                self.typed_value_to_string(id_) + \
+                self.typed_value_to_string(result, defs, flags)
+            
+            self.messagePending.emit(message)
     
     def create(self, args, defs):
     
@@ -118,9 +121,10 @@ class ObjectManager(QObject):
             obj = class_(*tuple(method_args))
             self.objects[name] = obj
             self.names[obj] = name
-            return name
         except:
-            return None
+            pass
+        
+        return self.NoReturnValue
     
     def forget(self, args, defs):
     
@@ -135,17 +139,16 @@ class ObjectManager(QObject):
             # in the pending events dictionary.
             if name in self.pending_events:
             
-                # Remove the event from the set of pending events.
-                self.pending_events.remove(name)
-                
-                # Remove the first event object from the list of pending events.
-                # This should have already been dispatched.
-                self.event_queue.pop(0)
+                # Remove the first event object of this type from the set of
+                # pending events.
+                self.pending_events[name].pop(0)
                 
                 # Dispatch the next pending event for this object and type.
                 self.dispatchEvent(name)
         except:
-            return None
+            pass
+        
+        return self.NoReturnValue
     
     def call_method(self, args, defs):
     
@@ -222,14 +225,10 @@ class ObjectManager(QObject):
     
         id_, obj, event_type = args[:3]
         
-        # Create a filter object for the object if one does not already exist.
-        try:
-            filter_obj = self.filters[obj]
-        except KeyError:
-            filter_obj = FilterObject(defs[obj], self)
-            filter_obj.addEventType(event_type)
-            self.filters[obj] = filter_obj
-            obj.installEventFilter(filter_obj)
+        # Create a filter object for the object.
+        filter_obj = FilterObject(id_, self)
+        filter_obj.addEventType(event_type)
+        obj.installEventFilter(filter_obj)
         
         return None
     
@@ -246,7 +245,7 @@ class ObjectManager(QObject):
         except KeyError:
             pass
         
-        return None
+        return self.NoReturnValue
     
     def parse_arguments(self, text):
     
@@ -410,25 +409,27 @@ class ObjectManager(QObject):
         
         self.messagePending.emit(message)
     
-    def queueEvent(self, src_name, event):
+    def queueEvent(self, id_, event):
     
         etype = int(event.type())
-        name = "%s_event_%i" % (src_name, etype)
+        name = "event_%i_%i" % (id_, etype)
         
         # Put this event in a queue.
-        self.pending_events.add(name)
-        self.event_queue.append((src_name, event))
+        pending = self.pending_events.setdefault(name, [])
+        pending.append((id_, event))
         
         # Try to dispatch the event.
         self.dispatchEvent(name)
     
     def dispatchEvent(self, event_obj_name):
     
-        # If there is more than one queued event then defer dispatch until later.
-        if len(self.event_queue) != 1:
+        # If there is more than one queued event for this target object and
+        # type then defer dispatch until later.
+        pending = self.pending_events[event_obj_name]
+        if len(pending) != 1:
             return
         
-        src_name, event = self.event_queue[0]
+        id_, event = pending[0]
         
         # Store the event in the object dictionary using a name derived from
         # the source object and the event type. This should yield a unique name
@@ -439,9 +440,7 @@ class ObjectManager(QObject):
         
         # Send a message with id = 1 to indicate that it is an event.
         message = self.typed_value_to_string("event") + \
-            self.typed_value_to_string(1) + \
-            self.typed_value_to_string(src_name) + \
-            self.typed_value_to_string(int(event.type())) + \
+            self.typed_value_to_string(id_) + \
             self.typed_value_to_string(event, self.names)
         
         self.messagePending.emit(message)
@@ -463,11 +462,11 @@ class SignalReceiver(QObject):
 
 class FilterObject(QObject):
 
-    def __init__(self, obj_name, objectManager):
+    def __init__(self, id_, objectManager):
     
         QObject.__init__(self, objectManager)
         
-        self.obj_name = obj_name
+        self.id_ = id_
         self.events = set()
         self.objectManager = objectManager
     
@@ -482,7 +481,7 @@ class FilterObject(QObject):
             if event.type() == QtCore.QEvent.Resize:
                 event = QtGui.QResizeEvent(event.size(), event.oldSize());
             
-            self.objectManager.queueEvent(self.obj_name, event)
+            self.objectManager.queueEvent(self.id_, event)
             return True
         
         return False

@@ -67,12 +67,9 @@ Channels.get(c: self ref Channels): (int, chan of string)
     response_ch := chan of string;
 
     c.counter = (c.counter + 1) % 1024;
-    
-    # Internally, the identifier 0 is reserved for signals and 1 for events, so
-    # use values from 2 to 1024 for other messages.
-    c.response_hash.add(c.counter + 2, response_ch);
+    c.response_hash.add(c.counter, response_ch);
 
-    return (c.counter + 2, response_ch);
+    return (c.counter, response_ch);
 }
 
 Channels.reader(c: self ref Channels)
@@ -187,7 +184,8 @@ Channels.writer(c: self ref Channels)
     }
 }
 
-Channels.request(c: self ref Channels, action: string, args: list of string): string
+Channels.request(c: self ref Channels, action: string, args: list of string,
+                 return_value_expected: int): string
 {
     # Obtain a channel to use to receive a response.
     (id_, response_ch) := c.get();
@@ -201,7 +199,12 @@ Channels.request(c: self ref Channels, action: string, args: list of string): st
         message[len message - 1] = '\n';
 
     c.write_ch <-= message;
-    value := <- response_ch;
+
+    value: string;
+    if (return_value_expected)
+        value = <- response_ch;
+    else
+        value = nil;
 
     # Delete the entry for the response in the response hash.
     c.response_hash.del(id_);
