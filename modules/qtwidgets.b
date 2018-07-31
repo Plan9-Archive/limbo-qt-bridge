@@ -46,11 +46,6 @@ init()
     # Keep a record of signal-slot connections.
     signal_hash = Strhash[list of Invokable].new(23, nil);
 
-    # Register a channel with the communication object that will be used to
-    # receive notifications about signals.
-    signal_ch := chan of string;
-    channels.response_hash.add(0, signal_ch);
-
     # Keep a record of event handlers.
     event_hash = Strhash[EventHandler].new(23, nil);
 
@@ -58,7 +53,6 @@ init()
     event_ch := chan of string;
     channels.response_hash.add(1, event_ch);
 
-    spawn signal_dispatcher(signal_ch);
     spawn event_dispatcher(event_ch);
 }
 
@@ -124,38 +118,29 @@ call_value(proxy, method: string, args: list of string, unpack_names: list of st
 connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    channels.request(enc_str("connect"), enc_inst(src)::enc_str(signal)::nil);
+    # Obtain a channel to use to receive a response.
+    (key, response_ch) := channels.get();
+    key_string := string key;
+    key_string = "i" + (string len key_string) + " " + key_string + " ";
 
-    # Register the destination slot.
-    proxy := src._get_proxy();
-    l := signal_hash.find(proxy + " " + signal);
-    if (l == nil)
-        l = list of { slot };
-    else
-        l = slot::l;
+    # Send the call request and receive the response.
+    message := enc_str("connect") + key_string + enc_inst(src) + enc_str(signal);
+    message[len message - 1] = '\n';
 
-    signal_hash.add(proxy + " " + signal, l);
+    channels.write_ch <-= message;
+    # Read and discard the response. The next time this channel will be used it
+    # will be to receive a signal.
+    value := <- response_ch;
+
+    spawn signal_dispatcher(response_ch, slot);
 }
 
-signal_dispatcher(signal_ch: chan of string)
+signal_dispatcher(signal_ch: chan of string, slot: Invokable)
 {
     for (;;) alt {
         s := <- signal_ch =>
-            # Split the key (the first two words in the reply) from the signal
-            # arguments (the rest).
-            type_, src, signal : string;
-
-            (type_, src, s) = parse_arg(s);
-            (type_, signal, s) = parse_arg(s);
-            key := src + " " + signal;
-
-            # Find the list of slots in the hash and call each of them with the
-            # list of arguments.
-            slots := signal_hash.find(key);
             args := parse_args(s);
-
-            for (; slots != nil; slots = tl slots)
-                (hd slots)(args);
+            slot(args);
     }
 }
 

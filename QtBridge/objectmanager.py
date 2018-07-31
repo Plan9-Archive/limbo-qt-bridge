@@ -186,7 +186,7 @@ class ObjectManager(QObject):
             # might be difficult to reproduce if we wanted to reimplement this
             # in C++, so instead we create a receiver object to relay the
             # signal.
-            receiver = SignalReceiver(defs[src], signal_name, self)
+            receiver = SignalReceiver(id_, self)
             self.debugMessage.emit("Connecting %s.%s" % (defs[src], signal_name))
             signal.connect(receiver.dispatch)
         
@@ -363,17 +363,14 @@ class ObjectManager(QObject):
         if not self.debug:
             self.finished.emit()
     
-    def dispatchSignal(self, src_name, signal_name, args):
+    def dispatchSignal(self, id_, args):
     
         serialised_args = []
         for arg in args:
             serialised_args.append(self.typed_value_to_string(arg, self.names))
         
-        # Send a message with id = 0 to indicate that it is a signal.
         message = self.typed_value_to_string("signal") + \
-            self.typed_value_to_string(0) + \
-            self.typed_value_to_string(src_name) + \
-            self.typed_value_to_string(signal_name) + \
+            self.typed_value_to_string(id_) + \
             "".join(serialised_args)
         
         self.messagePending.emit(message)
@@ -417,17 +414,16 @@ class ObjectManager(QObject):
 
 class SignalReceiver(QObject):
 
-    def __init__(self, src_name, signal_name, objectManager):
+    def __init__(self, id_, objectManager):
     
         QObject.__init__(self, objectManager)
         
-        self.src_name = src_name
-        self.signal = signal_name
+        self.id_ = id_
         self.objectManager = objectManager
     
     def dispatch(self, *args):
     
-        self.objectManager.dispatchSignal(self.src_name, self.signal, args)
+        self.objectManager.dispatchSignal(self.id_, args)
 
 
 class FilterObject(QObject):
