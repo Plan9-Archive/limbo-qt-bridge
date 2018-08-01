@@ -139,8 +139,7 @@ class ObjectManager(QObject):
             # in the pending events dictionary.
             if name in self.pending_events:
             
-                # Remove the first event object of this type from the set of
-                # pending events.
+                # Discard the old event.
                 self.pending_events[name].pop(0)
                 
                 # Dispatch the next pending event for this object and type.
@@ -239,8 +238,7 @@ class ObjectManager(QObject):
         # Indicate that the signal associated with an identifier has been
         # processed.
         try:
-            pending = self.pending_signals[id_]
-            pending.pop(0)
+            self.pending_signals[id_].pop(0)
             self.dispatchSignal(id_)
         except KeyError:
             pass
@@ -391,17 +389,13 @@ class ObjectManager(QObject):
         pending = self.pending_signals.setdefault(id_, [])
         pending.append(serialised_args)
         
-        # Try to dispatch the signal.
-        self.dispatchSignal(id_)
+        # If this is the only signal in the queue then dispatch it.
+        if len(pending) == 1:
+            self.dispatchSignal(id_)
     
     def dispatchSignal(self, id_):
     
-        # If there is more than one queued signal then defer dispatch until later.
-        pending = self.pending_signals[id_]
-        if len(pending) != 1:
-            return
-        
-        serialised_args = pending[0]
+        serialised_args = self.pending_signals[id_][0]
         
         message = self.typed_value_to_string("signal") + \
             self.typed_value_to_string(id_) + \
@@ -418,18 +412,15 @@ class ObjectManager(QObject):
         pending = self.pending_events.setdefault(name, [])
         pending.append((id_, event))
         
-        # Try to dispatch the event.
-        self.dispatchEvent(name)
+        # If this is the only event in the queue then dispatch it.
+        if len(pending) == 1:
+            self.dispatchEvent(name)
     
     def dispatchEvent(self, event_obj_name):
     
-        # If there is more than one queued event for this target object and
-        # type then defer dispatch until later.
-        pending = self.pending_events[event_obj_name]
-        if len(pending) != 1:
-            return
-        
-        id_, event = pending[0]
+        # Remove the first event object of this type from the set of
+        # pending events.
+        id_, event = self.pending_events[event_obj_name][0]
         
         # Store the event in the object dictionary using a name derived from
         # the source object and the event type. This should yield a unique name
