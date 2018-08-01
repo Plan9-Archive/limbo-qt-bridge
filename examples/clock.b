@@ -1,6 +1,9 @@
 # clock.b
 #
 # Written in 2018 by David Boddie <david@boddie.org.uk>
+# The circlept and timer functions, and parts of the drawClock function were
+# originally part of Inferno's appl/wm/clock.b file which is subject to the
+# Lucent Public License 1.02.
 #
 # To the extent possible under law, the author(s) have dedicated all copyright
 # and related and neighboring rights to this software to the public domain

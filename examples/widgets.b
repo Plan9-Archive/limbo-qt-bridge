@@ -56,7 +56,9 @@ init(ctxt: ref Draw->Context, args: list of string)
     menuBar := window.menuBar();
     menu := menuBar.addMenu("&File");
     openAction := menu.addAction("&Open");
+    openAction.setShortcut("Ctrl+O");
     exitAction := menu.addAction("E&xit");
+    exitAction.setShortcut("Ctrl+Q");
     connect(openAction, "triggered", handle_open);
     connect(exitAction, "triggered", handle_exit);
 
