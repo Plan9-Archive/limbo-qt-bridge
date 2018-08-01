@@ -239,7 +239,10 @@ class ObjectManager(QObject):
         # processed.
         try:
             self.pending_signals[id_].pop(0)
+            
+            # Dispatch the next pending signal of this type.
             self.dispatchSignal(id_)
+        
         except KeyError:
             pass
         
@@ -395,7 +398,11 @@ class ObjectManager(QObject):
     
     def dispatchSignal(self, id_):
     
-        serialised_args = self.pending_signals[id_][0]
+        pending = self.pending_signals[id_]
+        if len(pending) == 0:
+            return
+        
+        serialised_args = pending[0]
         
         message = self.typed_value_to_string("signal") + \
             self.typed_value_to_string(id_) + \
@@ -418,9 +425,13 @@ class ObjectManager(QObject):
     
     def dispatchEvent(self, event_obj_name):
     
-        # Remove the first event object of this type from the set of
-        # pending events.
-        id_, event = self.pending_events[event_obj_name][0]
+        pending = self.pending_events[event_obj_name]
+        if len(pending) == 0:
+            return
+        
+        # Obtain the first event object of this type from the set of pending
+        # events.
+        id_, event = pending[0]
         
         # Store the event in the object dictionary using a name derived from
         # the source object and the event type. This should yield a unique name

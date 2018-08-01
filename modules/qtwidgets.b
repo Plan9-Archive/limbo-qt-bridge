@@ -146,7 +146,11 @@ signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
 
             # Inform Qt that the signal has been processed. This is similar to
             # how the event dispatcher tidies up after calling an event handler.
-            channels.request(enc_str("process"), enc_int(id_)::nil, NoReturnValue);
+            # We create the message ourselves in order to use the identifier we
+            # acquired for the connection.
+            message := enc_str("process") + enc_int(id_);
+            message[len message - 1] = '\n';
+            channels.write_ch <-= message;
     }
 }
 
@@ -205,6 +209,11 @@ event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
 QAction._get_proxy(w: self ref QAction): string
 {
     return w.proxy;
+}
+
+QAction.setShortcut(w: self ref QAction, keys: string)
+{
+    call(w.proxy, "setShortcut", enc_str(keys)::nil);
 }
 
 QApplication.new(): ref QApplication

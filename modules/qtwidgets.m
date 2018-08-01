@@ -49,6 +49,8 @@ QtWidgets: module
     QAction: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QAction): string;
+
+        setShortcut: fn(w: self ref QAction, keys: string);
     };
 
     QApplication: adt {
