@@ -27,6 +27,8 @@ QtWidgets: module
     qdebug: fn(s: string);
 
     create: fn(class: string, args: list of string): string;
+    destroy: fn[T](obj: T)
+        for { T => _get_proxy: fn(w: self T): string; };
 
     connect: fn[T](src: T, signal: string, slot: Invokable)
         for { T => _get_proxy: fn(w: self T): string; };
@@ -166,6 +168,7 @@ QtWidgets: module
 
     QPainter: adt {
         proxy: string;
+        Antialiasing: con 1;
 
         new: fn(): ref QPainter;
         begin: fn[T](w: self ref QPainter, device: T)
@@ -176,19 +179,13 @@ QtWidgets: module
         drawText: fn(w: self ref QPainter, x, y: int, text: string);
         end: fn(w: self ref QPainter);
         setBrush: fn(w: self ref QPainter, brush: QBrush);
-        setPen: fn(w: self ref QPainter, brush: QPen);
-    };
-
-    QPaintEvent: adt {
-        proxy: string;
-        Type: con 12;
-
-        _get_event: fn(proxy: string): ref QPaintEvent;
-        rect: fn(e: self ref QPaintEvent): (int, int, int, int);
+        setPen: fn(w: self ref QPainter, pen: QPen);
+        setRenderHint: fn(w: self ref QPainter, hint: int);
     };
 
     QPen: adt {
         color: QColor;
+        width: int;
         enc: fn(w: self QPen): string;
     };
 
@@ -198,6 +195,7 @@ QtWidgets: module
 
         new: fn(width, height: int): ref QPixmap;
         fill: fn(w: self ref QPixmap, color: QColor);
+        size: fn(w: self ref QPixmap): (int, int);
     };
 
     QPushButton: adt {

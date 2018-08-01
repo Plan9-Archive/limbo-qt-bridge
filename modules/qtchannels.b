@@ -52,7 +52,7 @@ Channels.init(): ref Channels
     read_ch := chan of string;
     write_ch := chan of string;
 
-    c := ref Channels(0, response_hash, read_ch, write_ch);
+    c := ref Channels(0, 0, response_hash, read_ch, write_ch);
 
     # Spawn a reader and a writer to handle input and output in the background.
     spawn c.reader();
@@ -72,6 +72,17 @@ Channels.get(c: self ref Channels): (int, chan of string)
     return (c.counter, response_ch);
 }
 
+Channels.get_persistent(c: self ref Channels): (int, chan of string)
+{
+    # Creates a new channel and registers it in the hash table.
+    response_ch := chan of string;
+
+    c.persistent_counter = (c.persistent_counter + 1) % 1024;
+    c.response_hash.add(1024 + c.persistent_counter, response_ch);
+
+    return (1024 + c.persistent_counter, response_ch);
+}
+
 Channels.reader(c: self ref Channels)
 {
     stdin := sys->fildes(0);
@@ -80,6 +91,7 @@ Channels.reader(c: self ref Channels)
     value_str : string;
     in_message := 0;
     input_expected := 0;
+    f := sys->create("tmp.txt", sys->OWRITE, 8r666);
 
     for (;;) {
 
@@ -118,6 +130,7 @@ Channels.reader(c: self ref Channels)
             if (len current >= input_expected) {
 
                 value_str := current[:input_expected];
+                sys->write(f, array of byte (value_str + "\n"), len value_str + 1);
                 type_, token : string;
 
                 (type_, token, value_str) = parse_arg(value_str);

@@ -68,6 +68,12 @@ create(class: string, args: list of string): string
     return proxy;
 }
 
+destroy[T](obj: T)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    forget(obj._get_proxy());
+}
+
 forget(proxy: string)
 {
     channels.request(enc_str("forget"), enc_str(proxy)::nil, NoReturnValue);
@@ -115,7 +121,7 @@ connect[T](src: T, signal: string, slot: Invokable)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     # Obtain a channel to use to receive a response.
-    (id_, response_ch) := channels.get();
+    (id_, response_ch) := channels.get_persistent();
 
     # Send the call request and receive the response.
     message := enc_str("connect") + enc_int(id_) + enc_inst(src) + enc_str(signal);
@@ -138,7 +144,8 @@ signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
             args := parse_args(s);
             slot(args);
 
-            # Inform Qt that the signal has been processed.
+            # Inform Qt that the signal has been processed. This is similar to
+            # how the event dispatcher tidies up after calling an event handler.
             channels.request(enc_str("process"), enc_int(id_)::nil, NoReturnValue);
     }
 }
@@ -160,7 +167,7 @@ filter_event[T](src: T, event_type: int, handler: EventHandler)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     # Obtain a channel to use to receive a response.
-    (id_, response_ch) := channels.get();
+    (id_, response_ch) := channels.get_persistent();
 
     # Send the call request and receive the response.
     message := enc_str("filter") + enc_int(id_) + enc_inst(src) + enc_int(event_type);
@@ -187,6 +194,8 @@ event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
             # message reader to block because this qualifier is still active.
             proxy := dec_str(s);
             handler(proxy);
+            # The forget request does not expect a response, so any pending
+            # event messages that arrive immediately will not block it.
             forget(proxy);
     }
 }
@@ -455,12 +464,12 @@ QPainter.begin[T](w: self ref QPainter, device: T)
 
 QPainter.drawEllipse(w: self ref QPainter, x1, y1, x2, y2: int)
 {
-    call(w.proxy, "drawRect", enc_int(x1)::enc_int(y1)::enc_int(x2)::enc_int(y2)::nil);
+    call(w.proxy, "drawEllipse", enc_int(x1)::enc_int(y1)::enc_int(x2)::enc_int(y2)::nil);
 }
 
 QPainter.drawLine(w: self ref QPainter, x, y, width, height: int)
 {
-    call(w.proxy, "drawEllipse", enc_int(x)::enc_int(y)::enc_int(width)::enc_int(height)::nil);
+    call(w.proxy, "drawLine", enc_int(x)::enc_int(y)::enc_int(width)::enc_int(height)::nil);
 }
 
 QPainter.drawRect(w: self ref QPainter, x, y, width, height: int)
@@ -489,26 +498,14 @@ QPainter.setPen(w: self ref QPainter, pen: QPen)
     call(w.proxy, "setPen", pen.enc()::nil);
 }
 
-QPaintEvent._get_event(proxy: string): ref QPaintEvent
+QPainter.setRenderHint(w: self ref QPainter, hint: int)
 {
-    return ref QPaintEvent(proxy);
-}
-
-QPaintEvent.rect(e: self ref QPaintEvent): (int, int, int, int)
-{
-    value := call_value(e.proxy, "rect", nil, "x"::"y"::"width"::"height"::nil);
-
-    l := parse_ntuple(value);
-    x := int hd l; l = tl l;
-    y := int hd l; l = tl l;
-    w := int hd l; l = tl l;
-    h := int hd l;
-    return (x, y, w, h);
+    call(w.proxy, "setRenderHint", enc_int(hint)::nil);
 }
 
 QPen.enc(w: self QPen): string
 {
-    return enc_value("QPen", w.color.enc()::nil);
+    return enc_value("QPen", w.color.enc()::enc_int(w.width)::nil);
 }
 
 QPixmap._get_proxy(w: self ref QPixmap): string
@@ -525,6 +522,11 @@ QPixmap.new(width, height: int): ref QPixmap
 QPixmap.fill(w: self ref QPixmap, color: QColor)
 {
     call(w.proxy, "fill", color.enc()::nil);
+}
+
+QPixmap.size(w: self ref QPixmap): (int, int)
+{
+    return QWidget._size(w);
 }
 
 QPushButton._get_proxy(w: self ref QPushButton): string
@@ -646,10 +648,8 @@ QWidget._size[T](w: T): (int, int)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     value := call_value(w._get_proxy(), "size", nil, "width"::"height"::nil);
-    l := parse_ntuple(value);
-    width := int hd l;
-    height := int hd (tl l);
-    return (width, height);
+    (width, height) := parse_2tuple(value);
+    return (int width, int height);
 }
 
 QWidget._update[T](w: T)
