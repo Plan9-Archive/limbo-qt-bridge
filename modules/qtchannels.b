@@ -241,6 +241,14 @@ enc_int(i: int): string
     return enc(s, "i");
 }
 
+enc_bool(i: int): string
+{
+    if (i != 0)
+        return enc("True", "B");
+    else
+        return enc("False", "B");
+}
+
 enc_enum(name: string, value: int): string
 {
     # Create a pair of encoded values: C<length> <name> i<length> <value>
@@ -288,6 +296,15 @@ dec_int(s: string): int
 {
     (type_, token, rest) := parse_arg(s);
     return int token;
+}
+
+dec_bool(s: string): int
+{
+    (type_, token, rest) := parse_arg(s);
+    if (token == "True")
+        return 1;
+    else
+        return 0;
 }
 
 parse_2tuple(s: string): (string, string)

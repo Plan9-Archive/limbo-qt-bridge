@@ -316,6 +316,16 @@ QGridLayout.addLayout[T](w: self ref QGridLayout, widget: T, row, column, rowspa
         enc_inst(widget)::enc_int(row)::enc_int(column)::enc_int(rowspan)::enc_int(colspan)::nil);
 }
 
+QGridLayout.setContentsMargins(w: self ref QGridLayout, left, top, right, bottom: int)
+{
+    call(w.proxy, "setContentsMargins", enc_int(left)::enc_int(top)::enc_int(right)::enc_int(bottom)::nil);
+}
+
+QGridLayout.setSpacing(w: self ref QGridLayout, spacing: int)
+{
+    call(w.proxy, "setSpacing", enc_int(spacing)::nil);
+}
+
 QGroupBox._get_proxy(w: self ref QGroupBox): string
 {
     return w.proxy;
@@ -354,6 +364,16 @@ QHBoxLayout.addLayout[T](w: self ref QHBoxLayout, widget: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w.proxy, "addLayout", enc_inst(widget)::nil);
+}
+
+QHBoxLayout.setContentsMargins(w: self ref QHBoxLayout, left, top, right, bottom: int)
+{
+    call(w.proxy, "setContentsMargins", enc_int(left)::enc_int(top)::enc_int(right)::enc_int(bottom)::nil);
+}
+
+QHBoxLayout.setSpacing(w: self ref QHBoxLayout, spacing: int)
+{
+    call(w.proxy, "setSpacing", enc_int(spacing)::nil);
 }
 
 QLabel._get_proxy(w: self ref QLabel): string
@@ -401,6 +421,28 @@ QLabel.show(w: self ref QLabel)
 QLabel.size(w: self ref QLabel): (int, int)
 {
     return QWidget._size(w);
+}
+
+QLineEdit._get_proxy(w: self ref QLineEdit): string
+{
+    return w.proxy;
+}
+
+QLineEdit.new(): ref QLineEdit
+{
+    proxy := create("QLineEdit", nil);
+    return ref QLineEdit(proxy);
+}
+
+QLineEdit.clear(w: self ref QLineEdit)
+{
+    call(w.proxy, "clear", nil);
+}
+
+QLineEdit.text(w: self ref QLineEdit): string
+{
+    value := call(w.proxy, "text", nil);
+    return dec_str(value);
 }
 
 QMainWindow._get_proxy(w: self ref QMainWindow): string
@@ -590,9 +632,25 @@ QTextEdit.new(): ref QTextEdit
     return ref QTextEdit(proxy);
 }
 
+QTextEdit.append(w: self ref QTextEdit, text: string)
+{
+    call(w.proxy, "append", enc_str(text)::nil);
+}
+
+QTextEdit.isReadOnly(w: self ref QTextEdit): int
+{
+    value := call(w.proxy, "isReadOnly", nil);
+    return dec_bool(value);
+}
+
 QTextEdit.setText(w: self ref QTextEdit, text: string)
 {
     call(w.proxy, "setText", enc_str(text)::nil);
+}
+
+QTextEdit.setReadOnly(w: self ref QTextEdit, enable: int)
+{
+    call(w.proxy, "setReadOnly", enc_bool(enable)::nil);
 }
 
 QVBoxLayout._get_proxy(w: self ref QVBoxLayout): string
@@ -618,6 +676,16 @@ QVBoxLayout.addLayout[T](w: self ref QVBoxLayout, widget: T)
     call(w.proxy, "addLayout", enc_inst(widget)::nil);
 }
 
+QVBoxLayout.setContentsMargins(w: self ref QVBoxLayout, left, top, right, bottom: int)
+{
+    call(w.proxy, "setContentsMargins", enc_int(left)::enc_int(top)::enc_int(right)::enc_int(bottom)::nil);
+}
+
+QVBoxLayout.setSpacing(w: self ref QVBoxLayout, spacing: int)
+{
+    call(w.proxy, "setSpacing", enc_int(spacing)::nil);
+}
+
 QWidget._get_proxy(w: self ref QWidget): string
 {
     return w.proxy;
@@ -633,6 +701,13 @@ QWidget._resize[T](w: T, width, height: int)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w._get_proxy(), "resize", enc_int(width)::enc_int(height)::nil);
+}
+
+QWidget._setFocusProxy[T,U](w: T, proxy: U)
+    for { T => _get_proxy: fn(w: self T): string;
+          U => _get_proxy: fn(w: self U): string; }
+{
+    call(w._get_proxy(), "setFocusProxy", enc_inst(proxy)::nil);
 }
 
 QWidget._setLayout[T](w: T, layout: T)

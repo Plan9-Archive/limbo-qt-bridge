@@ -25,6 +25,7 @@ QtChannels: module
     enc: fn(s, t: string): string;
     enc_str: fn(s: string): string;
     enc_int: fn(i: int): string;
+    enc_bool: fn(i: int): string;
     enc_enum: fn(name: string, value: int): string;
     enc_value: fn(name: string, values: list of string): string;
     enc_inst: fn[T](instance: T): string
@@ -32,6 +33,7 @@ QtChannels: module
     parse_arg: fn(s: string): (string, string, string);
     dec_str: fn(s: string): string;
     dec_int: fn(s: string): int;
+    dec_bool: fn(s: string): int;
     parse_2tuple: fn(s: string): (string, string);
     parse_ntuple: fn(s: string): list of string;
     parse_args: fn(s: string): list of string;

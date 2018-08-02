@@ -1,7 +1,7 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
-    Channels, enc, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
-    parse_arg, dec_str, dec_int: import qtchannels;
+    Channels, enc, enc_bool, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
+    parse_arg, dec_bool, dec_str, dec_int: import qtchannels;
     parse_2tuple, parse_ntuple, parse_args, debug_msg: import qtchannels;
 
 QtWidgets: module
@@ -105,6 +105,8 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         addLayout: fn[T](w: self ref QGridLayout, widget: T, row, column, rowspan, colspan: int)
             for { T => _get_proxy: fn(w: self T): string; };
+        setContentsMargins: fn(w: self ref QGridLayout, left, top, right, bottom: int);
+        setSpacing: fn(w: self ref QGridLayout, spacing: int);
     };
 
     QGroupBox: adt {
@@ -125,6 +127,8 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         addLayout: fn[T](w: self ref QHBoxLayout, widget: T)
             for { T => _get_proxy: fn(w: self T): string; };
+        setContentsMargins: fn(w: self ref QHBoxLayout, left, top, right, bottom: int);
+        setSpacing: fn(w: self ref QHBoxLayout, spacing: int);
     };
 
     QLabel: adt {
@@ -140,6 +144,15 @@ QtWidgets: module
         setWindowTitle: fn(w: self ref QLabel, text: string);
         show: fn(w: self ref QLabel);
         size: fn(w: self ref QLabel): (int, int);
+    };
+
+    QLineEdit: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QLineEdit): string;
+
+        new: fn(): ref QLineEdit;
+        clear: fn(w: self ref QLineEdit);
+        text: fn(w: self ref QLineEdit): string;
     };
 
     QMainWindow: adt {
@@ -228,7 +241,10 @@ QtWidgets: module
         _get_proxy: fn(w: self ref QTextEdit): string;
 
         new: fn(): ref QTextEdit;
+        append: fn(w: self ref QTextEdit, text: string);
+        isReadOnly: fn(w: self ref QTextEdit): int;
         setText: fn(w: self ref QTextEdit, text: string);
+        setReadOnly: fn(w: self ref QTextEdit, enable: int);
     };
 
     QVBoxLayout: adt {
@@ -240,6 +256,8 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         addLayout: fn[T](w: self ref QVBoxLayout, widget: T)
             for { T => _get_proxy: fn(w: self T): string; };
+        setContentsMargins: fn(w: self ref QVBoxLayout, left, top, right, bottom: int);
+        setSpacing: fn(w: self ref QVBoxLayout, spacing: int);
     };
 
     QWidget: adt {
@@ -252,6 +270,9 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         _resize: fn[T](w: T, width, height: int)
             for { T => _get_proxy: fn(w: self T): string; };
+        _setFocusProxy: fn[T,U](w: T, proxy: U)
+            for { T => _get_proxy: fn(w: self T): string;
+                  U => _get_proxy: fn(w: self U): string; };
         _setLayout: fn[T](w: T, layout: T)
             for { T => _get_proxy: fn(w: self T): string; };
         _setWindowTitle: fn[T](w: T, title: string)
