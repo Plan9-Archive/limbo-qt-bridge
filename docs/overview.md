@@ -97,8 +97,8 @@ regular requests and responses are allocated from a different range of integers
 to those used for signals and events because the latter are persistent.
 
 
-Accessing objects
------------------
+Message types
+-------------
 
 An object is created in the PyQt environment by sending a `create` message:
 
@@ -235,22 +235,3 @@ the following example:
 
 This causes the next pending event to be sent for the given object and event
 type.
-
-
-Installing the modules
-----------------------
-
-The Limbo implementation of the bridge is stored in the `modules` directory.
-The `qtwidgets.b` and `qtchannels.b` files are compiled as normal, either in
-the hosted Inferno environment or outside it using the native `limbo` compiler.
-The `qtwidgets.m` and `qtchannels.m` files are installed inside the hosted
-environment within the `module` directory.
-
-For example, if the environment variable `INFERNO_ROOT` refers to the location
-of the hosted Inferno environment, you might compile and install the modules
-at the command line with the following commands:
-
-    limbo modules/*.b
-    cp qt*.dis $INFERNO_ROOT/dis/lib/
-    cp modules/qt*.m $INFERNO_ROOT/module/
-
