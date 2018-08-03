@@ -16,6 +16,9 @@ file descriptors. The Qt classes and methods exposed to the Limbo application
 are defined as ADTs, providing a class-like API that should be familiar to
 developers with Qt experience.
 
+See the `docs/overview.md` file for more information about the messages used to
+communicate between Limbo and Python.
+
 
 Installing the modules
 ----------------------
