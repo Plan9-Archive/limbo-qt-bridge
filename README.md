@@ -19,6 +19,15 @@ developers with Qt experience.
 See the `docs/overview.md` file for more information about the messages used to
 communicate between Limbo and Python.
 
+One major limitation of this approach is that subclassing of Qt classes is not
+possible from Limbo. This limits the kinds of widgets that can be used and the
+extent to which they can be customised since Qt programming relies heavily on
+this programming technique. However, it is possible to manage some level of
+customisation by using event filters for certain tasks. In any case, Qt's
+signal-slot connection paradigm is intended to allow widgets to be used without
+subclassing, so many common uses of widgets are not heavily affected by this
+limitation.
+
 
 Installing the modules
 ----------------------
