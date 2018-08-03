@@ -95,4 +95,18 @@ This software is licensed under the Expat/MIT license:
   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
   DEALINGS IN THE SOFTWARE.
 
-The examples
+The examples are typically supplied under the following CC0 Public Domain
+Dedication:
+
+  Written in 2018 by David Boddie <david@boddie.org.uk>
+
+  To the extent possible under law, the author(s) have dedicated all copyright
+  and related and neighboring rights to this software to the public domain
+  worldwide. This software is distributed without any warranty.
+
+  You should have received a copy of the CC0 Public Domain Dedication along with
+  this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+The only possible exception to this is the `clock.b` example that uses parts of
+the Inferno `clock.b` demo which is licensed under the terms of the Lucent
+Public License 1.02.
