@@ -1,7 +1,7 @@
 include "qtchannels.m";
     qtchannels: QtChannels;
-    Channels, enc, enc_bool, enc_int, enc_str, enc_enum, enc_value, enc_inst: import qtchannels;
-    parse_arg, dec_bool, dec_str, dec_int: import qtchannels;
+    Channels, enc, enc_bool, enc_int, enc_real, enc_str, enc_enum: import qtchannels;
+    enc_value, enc_inst, parse_arg, dec_bool, dec_str, dec_int: import qtchannels;
     parse_2tuple, parse_ntuple, parse_args, debug_msg: import qtchannels;
 
 QtWidgets: module
@@ -26,8 +26,7 @@ QtWidgets: module
 
     qdebug: fn(s: string);
 
-    create: fn(class: string, args: list of string): string;
-    destroy: fn[T](obj: T)
+    forget: fn[T](obj: T)
         for { T => _get_proxy: fn(w: self T): string; };
 
     connect: fn[T](src: T, signal: string, slot: Invokable)
@@ -94,6 +93,91 @@ QtWidgets: module
 
         getOpenFileName: fn[T](parent: T, caption, dir, filter: string): (string, string)
             for { T => _get_proxy: fn(w: self T): string; };
+    };
+
+    QFont: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QFont): string;
+
+        new: fn(): ref QFont;
+        setFamily: fn(w: self ref QFont, family: string);
+        setPixelSize: fn(w: self ref QFont, size: int);
+        setPointSize: fn(w: self ref QFont, size: real);
+    };
+
+    QGraphicsEllipseItem: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsEllipseItem): string;
+
+        setBrush: fn(w: self ref QGraphicsEllipseItem, brush: QBrush);
+        setPen: fn(w: self ref QGraphicsEllipseItem, pen: QPen);
+        setPos: fn(w: self ref QGraphicsEllipseItem, x, y: real);
+    };
+
+    QGraphicsLineItem: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsLineItem): string;
+
+        setPen: fn(w: self ref QGraphicsLineItem, pen: QPen);
+        setPos: fn(w: self ref QGraphicsLineItem, x, y: real);
+    };
+
+    QGraphicsRectItem: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsRectItem): string;
+
+        setBrush: fn(w: self ref QGraphicsRectItem, brush: QBrush);
+        setPen: fn(w: self ref QGraphicsRectItem, pen: QPen);
+        setPos: fn(w: self ref QGraphicsRectItem, x, y: real);
+    };
+
+    QGraphicsSimpleTextItem: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsSimpleTextItem): string;
+
+        setBrush: fn(w: self ref QGraphicsSimpleTextItem, brush: QBrush);
+        setFont: fn(w: self ref QGraphicsSimpleTextItem, font: ref QFont);
+        setPen: fn(w: self ref QGraphicsSimpleTextItem, pen: QPen);
+        setPos: fn(w: self ref QGraphicsSimpleTextItem, x, y: real);
+    };
+
+    QGraphicsTextItem: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsTextItem): string;
+
+        setBrush: fn(w: self ref QGraphicsTextItem, brush: QBrush);
+        setFont: fn(w: self ref QGraphicsTextItem, font: ref QFont);
+        setPen: fn(w: self ref QGraphicsTextItem, pen: QPen);
+        setPos: fn(w: self ref QGraphicsTextItem, x, y: real);
+    };
+
+    QGraphicsScene: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsScene): string;
+
+        new: fn(): ref QGraphicsScene;
+        addEllipse: fn(w: self ref QGraphicsScene, x, y, width, height: real): ref QGraphicsEllipseItem;
+        addLine: fn(w: self ref QGraphicsScene, x1, y1, x2, y2: real): ref QGraphicsLineItem;
+        addRect: fn(w: self ref QGraphicsScene, x, y, width, height: real): ref QGraphicsRectItem;
+        addSimpleText: fn(w: self ref QGraphicsScene, text: string): ref QGraphicsSimpleTextItem;
+        addText: fn(w: self ref QGraphicsScene, text: string): ref QGraphicsTextItem;
+    };
+
+    QGraphicsView: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QGraphicsView): string;
+
+        NoDrag, ScrollHandDrag, RubberHandDrag: con iota;
+
+        new: fn(): ref QGraphicsView;
+        scale: fn(w: self ref QGraphicsView, sx, sy: real);
+        setDragMode: fn(w: self ref QGraphicsView, dragMode: int);
+        setRenderHint: fn(w: self ref QGraphicsView, hint: int);
+        setScene: fn(w: self ref QGraphicsView, scene: ref QGraphicsScene);
+        setSceneRect: fn(w: self ref QGraphicsView, x, y, width, height: real);
+        setTransform: fn(w: self ref QGraphicsView, transform: ref QTransform);
+        translate: fn(w: self ref QGraphicsView, dx, dy: real);
+        viewport: fn(w: self ref QGraphicsView): ref QWidget;
     };
 
     QGridLayout: adt {
@@ -181,8 +265,21 @@ QtWidgets: module
         addMenu: fn(w: self ref QMenuBar, title: string): ref QMenu;
     };
 
+    QMouseEvent: adt {
+        proxy: string;
+        Press: con 2;
+        Release: con 3;
+        Move: con 5;
+
+        button: fn(e: self ref QMouseEvent): int;
+        x: fn(e: self ref QMouseEvent): int;
+        y: fn(e: self ref QMouseEvent): int;
+        type_: fn(e: self ref QMouseEvent): int;
+    };
+
     QPainter: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QPainter): string;
         Antialiasing: con 1;
 
         new: fn(): ref QPainter;
@@ -231,7 +328,6 @@ QtWidgets: module
         proxy: string;
         Type: con 14;
 
-        _get_event: fn(proxy: string): ref QResizeEvent;
         oldSize: fn(e: self ref QResizeEvent): (int, int);
         size: fn(e: self ref QResizeEvent): (int, int);
     };
@@ -247,6 +343,13 @@ QtWidgets: module
         setReadOnly: fn(w: self ref QTextEdit, enable: int);
     };
 
+    QTransform: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QTransform): string;
+
+        new: fn(): ref QTransform;
+    };
+
     QVBoxLayout: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QVBoxLayout): string;
@@ -260,6 +363,16 @@ QtWidgets: module
         setSpacing: fn(w: self ref QVBoxLayout, spacing: int);
     };
 
+    QWheelEvent: adt {
+        proxy: string;
+        Type: con 31;
+
+        buttons: fn(e: self ref QWheelEvent): int;
+        angleDelta: fn(e: self ref QWheelEvent): int;
+        x: fn(e: self ref QWheelEvent): int;
+        y: fn(e: self ref QWheelEvent): int;
+    };
+
     QWidget: adt {
         proxy: string;
         _get_proxy: fn(w: self ref QWidget): string;
@@ -270,10 +383,14 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         _resize: fn[T](w: T, width, height: int)
             for { T => _get_proxy: fn(w: self T): string; };
+        _setFixedSize: fn[T](w: T, width, height: int)
+            for { T => _get_proxy: fn(w: self T): string; };
         _setFocusProxy: fn[T,U](w: T, proxy: U)
             for { T => _get_proxy: fn(w: self T): string;
                   U => _get_proxy: fn(w: self U): string; };
         _setLayout: fn[T](w: T, layout: T)
+            for { T => _get_proxy: fn(w: self T): string; };
+        _setMouseTracking: fn[T](w: T, enable: int)
             for { T => _get_proxy: fn(w: self T): string; };
         _setWindowTitle: fn[T](w: T, title: string)
             for { T => _get_proxy: fn(w: self T): string; };
@@ -287,6 +404,8 @@ QtWidgets: module
         new: fn(): ref QWidget;
         close: fn(w: self ref QWidget);
         resize: fn(w: self ref QWidget, width, height: int);
+        setFixedSize: fn(w: self ref QWidget, width, height: int);
+        setMouseTracking: fn(w: self ref QWidget, enable: int);
         setLayout: fn[T](w: self ref QWidget, layout: T)
             for { T => _get_proxy: fn(w: self T): string; };
         setWindowTitle: fn(w: self ref QWidget, title: string);

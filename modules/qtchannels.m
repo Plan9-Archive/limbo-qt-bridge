@@ -25,6 +25,7 @@ QtChannels: module
     enc: fn(s, t: string): string;
     enc_str: fn(s: string): string;
     enc_int: fn(i: int): string;
+    enc_real: fn(r: real): string;
     enc_bool: fn(i: int): string;
     enc_enum: fn(name: string, value: int): string;
     enc_value: fn(name: string, values: list of string): string;

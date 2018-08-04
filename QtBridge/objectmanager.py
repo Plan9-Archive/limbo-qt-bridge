@@ -21,7 +21,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import sip
-from PyQt5.QtCore import QCoreApplication, QObject, pyqtSignal
+from PyQt5.QtCore import QCoreApplication, QObject, Qt, pyqtSignal
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class ObjectManager(QObject):
@@ -464,6 +464,10 @@ class SignalReceiver(QObject):
 
 class FilterObject(QObject):
 
+    MouseEvents = [QtCore.QEvent.MouseButtonPress,
+                   QtCore.QEvent.MouseButtonRelease,
+                   QtCore.QEvent.MouseMove]
+    
     def __init__(self, id_, objectManager):
     
         QObject.__init__(self, objectManager)
@@ -482,6 +486,15 @@ class FilterObject(QObject):
             # the event object itself, only the event type.
             if event.type() == QtCore.QEvent.Resize:
                 event = QtGui.QResizeEvent(event.size(), event.oldSize());
+            elif event.type() in self.MouseEvents:
+                event = QtGui.QMouseEvent(event.type(), event.localPos(),
+                    event.screenPos(), event.button(), event.buttons(),
+                    event.modifiers());
+            elif event.type() == QtCore.QEvent.Wheel:
+                event = QtGui.QWheelEvent(event.pos(), event.globalPos(),
+                    event.pixelDelta(), event.angleDelta(),
+                    event.angleDelta().y(), Qt.Vertical,
+                    event.buttons(), event.modifiers())
             
             self.objectManager.queueEvent(self.id_, event)
             return True

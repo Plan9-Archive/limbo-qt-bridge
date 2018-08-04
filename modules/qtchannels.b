@@ -241,6 +241,12 @@ enc_int(i: int): string
     return enc(s, "i");
 }
 
+enc_real(r: real): string
+{
+    s := string r;
+    return enc(s, "f");
+}
+
 enc_bool(i: int): string
 {
     if (i != 0)

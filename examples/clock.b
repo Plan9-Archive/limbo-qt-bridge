@@ -38,7 +38,7 @@ include "daytime.m";
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QBrush, QColor, QLabel, QPainter, QPen, QPixmap: import qt;
-    QResizeEvent, QWidget, destroy, filter_event, qdebug: import qt;
+    QResizeEvent, QWidget, forget, filter_event, qdebug: import qt;
 
 Clock: module
 {
@@ -98,7 +98,7 @@ resizeEvent(proxy: string)
     if (w != pw || h != ph) {
         # Acquire the lock in order to destroy the pixmap.
         lock <-= 1;
-        destroy(pixmap);
+        forget(pixmap);
         pixmap = QPixmap.new(w, h);
         <- lock;
     }

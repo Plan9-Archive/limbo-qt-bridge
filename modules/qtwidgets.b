@@ -68,13 +68,13 @@ create(class: string, args: list of string): string
     return proxy;
 }
 
-destroy[T](obj: T)
+forget[T](obj: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
-    forget(obj._get_proxy());
+    forget_proxy(obj._get_proxy());
 }
 
-forget(proxy: string)
+forget_proxy(proxy: string)
 {
     channels.request(enc_str("forget"), enc_str(proxy)::nil, NoReturnValue);
 }
@@ -200,7 +200,7 @@ event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
             handler(proxy);
             # The forget request does not expect a response, so any pending
             # event messages that arrive immediately will not block it.
-            forget(proxy);
+            forget_proxy(proxy);
     }
 }
 
@@ -289,6 +289,234 @@ QFileDialog.getOpenFileName[T](parent: T, caption, dir, filter: string): (string
         enc_str(filter)::nil);
 
     return parse_2tuple(value);
+}
+
+QFont._get_proxy(w: self ref QFont): string
+{
+    return w.proxy;
+}
+
+QFont.new(): ref QFont
+{
+    proxy := create("QFont", nil);
+    return ref QFont(proxy);
+}
+
+QFont.setFamily(w: self ref QFont, family: string)
+{
+    call(w.proxy, "setFamily", enc_str(family)::nil);
+}
+
+QFont.setPixelSize(w: self ref QFont, size: int)
+{
+    call(w.proxy, "setPixelSize", enc_int(size)::nil);
+}
+
+QFont.setPointSize(w: self ref QFont, size: real)
+{
+    # Note that we call setPointSizeF instead of setPointSize.
+    call(w.proxy, "setPointSizeF", enc_real(size)::nil);
+}
+
+QGraphicsEllipseItem._get_proxy(w: self ref QGraphicsEllipseItem): string
+{
+    return w.proxy;
+}
+
+QGraphicsEllipseItem.setBrush(w: self ref QGraphicsEllipseItem, brush: QBrush)
+{
+    call(w.proxy, "setBrush", brush.enc()::nil);
+}
+
+QGraphicsEllipseItem.setPen(w: self ref QGraphicsEllipseItem, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QGraphicsEllipseItem.setPos(w: self ref QGraphicsEllipseItem, x, y: real)
+{
+    call(w.proxy, "setPos", enc_real(x)::enc_real(y)::nil);
+}
+
+QGraphicsLineItem._get_proxy(w: self ref QGraphicsLineItem): string
+{
+    return w.proxy;
+}
+
+QGraphicsLineItem.setPen(w: self ref QGraphicsLineItem, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QGraphicsLineItem.setPos(w: self ref QGraphicsLineItem, x, y: real)
+{
+    call(w.proxy, "setPos", enc_real(x)::enc_real(y)::nil);
+}
+
+QGraphicsRectItem._get_proxy(w: self ref QGraphicsRectItem): string
+{
+    return w.proxy;
+}
+
+QGraphicsRectItem.setBrush(w: self ref QGraphicsRectItem, brush: QBrush)
+{
+    call(w.proxy, "setBrush", brush.enc()::nil);
+}
+
+QGraphicsRectItem.setPen(w: self ref QGraphicsRectItem, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QGraphicsRectItem.setPos(w: self ref QGraphicsRectItem, x, y: real)
+{
+    call(w.proxy, "setPos", enc_real(x)::enc_real(y)::nil);
+}
+
+QGraphicsSimpleTextItem._get_proxy(w: self ref QGraphicsSimpleTextItem): string
+{
+    return w.proxy;
+}
+
+QGraphicsSimpleTextItem.setBrush(w: self ref QGraphicsSimpleTextItem, brush: QBrush)
+{
+    call(w.proxy, "setBrush", brush.enc()::nil);
+}
+
+QGraphicsSimpleTextItem.setFont(w: self ref QGraphicsSimpleTextItem, font: ref QFont)
+{
+    call(w.proxy, "setFont", enc_inst(font)::nil);
+}
+
+QGraphicsSimpleTextItem.setPen(w: self ref QGraphicsSimpleTextItem, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QGraphicsSimpleTextItem.setPos(w: self ref QGraphicsSimpleTextItem, x, y: real)
+{
+    call(w.proxy, "setPos", enc_real(x)::enc_real(y)::nil);
+}
+
+QGraphicsTextItem._get_proxy(w: self ref QGraphicsTextItem): string
+{
+    return w.proxy;
+}
+
+QGraphicsTextItem.setBrush(w: self ref QGraphicsTextItem, brush: QBrush)
+{
+    call(w.proxy, "setBrush", brush.enc()::nil);
+}
+
+QGraphicsTextItem.setFont(w: self ref QGraphicsTextItem, font: ref QFont)
+{
+    call(w.proxy, "setFont", enc_inst(font)::nil);
+}
+
+QGraphicsTextItem.setPen(w: self ref QGraphicsTextItem, pen: QPen)
+{
+    call(w.proxy, "setPen", pen.enc()::nil);
+}
+
+QGraphicsTextItem.setPos(w: self ref QGraphicsTextItem, x, y: real)
+{
+    call(w.proxy, "setPos", enc_real(x)::enc_real(y)::nil);
+}
+
+QGraphicsScene._get_proxy(w: self ref QGraphicsScene): string
+{
+    return w.proxy;
+}
+
+QGraphicsScene.new(): ref QGraphicsScene
+{
+    proxy := create("QGraphicsScene", nil);
+    return ref QGraphicsScene(proxy);
+}
+
+QGraphicsScene.addEllipse(w: self ref QGraphicsScene, x, y, width, height: real): ref QGraphicsEllipseItem
+{
+    value := dec_str(call_keep(w.proxy, "addEllipse",
+        enc_real(x)::enc_real(y)::enc_real(width)::enc_real(height)::nil));
+    return ref QGraphicsEllipseItem(value);
+}
+
+QGraphicsScene.addLine(w: self ref QGraphicsScene, x1, y1, x2, y2: real): ref QGraphicsLineItem
+{
+    value := dec_str(call_keep(w.proxy, "addLine",
+        enc_real(x1)::enc_real(y1)::enc_real(x2)::enc_real(y2)::nil));
+    return ref QGraphicsLineItem(value);
+}
+
+QGraphicsScene.addRect(w: self ref QGraphicsScene, x, y, width, height: real): ref QGraphicsRectItem
+{
+    value := dec_str(call_keep(w.proxy, "addRect",
+        enc_real(x)::enc_real(y)::enc_real(width)::enc_real(height)::nil));
+    return ref QGraphicsRectItem(value);
+}
+
+QGraphicsScene.addSimpleText(w: self ref QGraphicsScene, text: string): ref QGraphicsSimpleTextItem
+{
+    value := dec_str(call_keep(w.proxy, "addSimpleText", enc_str(text)::nil));
+    return ref QGraphicsSimpleTextItem(value);
+}
+
+QGraphicsScene.addText(w: self ref QGraphicsScene, text: string): ref QGraphicsTextItem
+{
+    value := dec_str(call_keep(w.proxy, "addText", enc_str(text)::nil));
+    return ref QGraphicsTextItem(value);
+}
+
+QGraphicsView._get_proxy(w: self ref QGraphicsView): string
+{
+    return w.proxy;
+}
+
+QGraphicsView.new(): ref QGraphicsView
+{
+    proxy := create("QGraphicsView", nil);
+    return ref QGraphicsView(proxy);
+}
+
+QGraphicsView.setDragMode(w: self ref QGraphicsView, dragMode: int)
+{
+    call(w.proxy, "setDragMode", enc_int(dragMode)::nil);
+}
+
+QGraphicsView.scale(w: self ref QGraphicsView, sx, sy: real)
+{
+    call(w.proxy, "scale", enc_real(sx)::enc_real(sy)::nil);
+}
+
+QGraphicsView.setRenderHint(w: self ref QGraphicsView, hint: int)
+{
+    call(w.proxy, "setRenderHint", enc_int(hint)::nil);
+}
+
+QGraphicsView.setScene(w: self ref QGraphicsView, scene: ref QGraphicsScene)
+{
+    call(w.proxy, "setScene", enc_inst(scene)::nil);
+}
+
+QGraphicsView.setSceneRect(w: self ref QGraphicsView, x, y, width, height: real)
+{
+    call(w.proxy, "setSceneRect", enc_real(x)::enc_real(y)::enc_real(width)::enc_real(height)::nil);
+}
+
+QGraphicsView.setTransform(w: self ref QGraphicsView, transform: ref QTransform)
+{
+    call(w.proxy, "setTransform", enc_inst(transform)::nil);
+}
+
+QGraphicsView.translate(w: self ref QGraphicsView, dx, dy: real)
+{
+    call(w.proxy, "translate", enc_real(dx)::enc_real(dy)::nil);
+}
+
+QGraphicsView.viewport(w: self ref QGraphicsView): ref QWidget
+{
+    proxy := dec_str(call_keep(w.proxy, "viewport", nil));
+    return ref QWidget(proxy);
 }
 
 QGridLayout._get_proxy(w: self ref QGridLayout): string
@@ -501,6 +729,35 @@ QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QMenu
     return ref QMenu(value);
 }
 
+QMouseEvent.button(e: self ref QMouseEvent): int
+{
+    value := call(e.proxy, "button", nil);
+    return dec_int(value);
+}
+
+QMouseEvent.type_(e: self ref QMouseEvent): int
+{
+    value := call(e.proxy, "type", nil);
+    return dec_int(value);
+}
+
+QMouseEvent.x(e: self ref QMouseEvent): int
+{
+    value := call(e.proxy, "x", nil);
+    return dec_int(value);
+}
+
+QMouseEvent.y(e: self ref QMouseEvent): int
+{
+    value := call(e.proxy, "y", nil);
+    return dec_int(value);
+}
+
+QPainter._get_proxy(w: self ref QPainter): string
+{
+    return w.proxy;
+}
+
 QPainter.new(): ref QPainter
 {
     proxy := create("QPainter", nil);
@@ -536,7 +793,7 @@ QPainter.drawText(w: self ref QPainter, x, y: int, text: string)
 QPainter.end(w: self ref QPainter)
 {
     call(w.proxy, "end", nil);
-    forget(w.proxy);
+    forget(w);
 }
 
 QPainter.setBrush(w: self ref QPainter, brush: QBrush)
@@ -602,11 +859,6 @@ QRadioButton.new(text: string): ref QRadioButton
     return ref QRadioButton(proxy);
 }
 
-QResizeEvent._get_event(proxy: string): ref QResizeEvent
-{
-    return ref QResizeEvent(proxy);
-}
-
 QResizeEvent.oldSize(e: self ref QResizeEvent): (int, int)
 {
     value := call_value(e.proxy, "oldSize", nil, "width"::"height"::nil);
@@ -653,6 +905,17 @@ QTextEdit.setReadOnly(w: self ref QTextEdit, enable: int)
     call(w.proxy, "setReadOnly", enc_bool(enable)::nil);
 }
 
+QTransform._get_proxy(w: self ref QTransform): string
+{
+    return w.proxy;
+}
+
+QTransform.new(): ref QTransform
+{
+    proxy := create("QTransform", nil);
+    return ref QTransform(proxy);
+}
+
 QVBoxLayout._get_proxy(w: self ref QVBoxLayout): string
 {
     return w.proxy;
@@ -686,6 +949,32 @@ QVBoxLayout.setSpacing(w: self ref QVBoxLayout, spacing: int)
     call(w.proxy, "setSpacing", enc_int(spacing)::nil);
 }
 
+QWheelEvent.buttons(e: self ref QWheelEvent): int
+{
+    value := call(e.proxy, "buttons", nil);
+    return dec_int(value);
+}
+
+QWheelEvent.angleDelta(e: self ref QWheelEvent): int
+{
+    # angleDelta returns a QPoint but we only want the y component.
+    value := call_value(e.proxy, "angleDelta", nil, "x"::"y"::nil);
+    (x, y) := parse_2tuple(value);
+    return int y;
+}
+
+QWheelEvent.x(e: self ref QWheelEvent): int
+{
+    value := call(e.proxy, "x", nil);
+    return dec_int(value);
+}
+
+QWheelEvent.y(e: self ref QWheelEvent): int
+{
+    value := call(e.proxy, "y", nil);
+    return dec_int(value);
+}
+
 QWidget._get_proxy(w: self ref QWidget): string
 {
     return w.proxy;
@@ -703,6 +992,12 @@ QWidget._resize[T](w: T, width, height: int)
     call(w._get_proxy(), "resize", enc_int(width)::enc_int(height)::nil);
 }
 
+QWidget._setFixedSize[T](w: T, width, height: int)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w._get_proxy(), "setFixedSize", enc_int(width)::enc_int(height)::nil);
+}
+
 QWidget._setFocusProxy[T,U](w: T, proxy: U)
     for { T => _get_proxy: fn(w: self T): string;
           U => _get_proxy: fn(w: self U): string; }
@@ -714,6 +1009,12 @@ QWidget._setLayout[T](w: T, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     call(w._get_proxy(), "setLayout", enc_inst(layout)::nil);
+}
+
+QWidget._setMouseTracking[T](w: T, enable: int)
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    call(w._get_proxy(), "setMouseTracking", enc_bool(enable)::nil);
 }
 
 QWidget._setWindowTitle[T](w: T, title: string)
@@ -758,10 +1059,20 @@ QWidget.resize(w: self ref QWidget, width, height: int)
     QWidget._resize(w, width, height);
 }
 
+QWidget.setFixedSize(w: self ref QWidget, width, height: int)
+{
+    QWidget._setFixedSize(w, width, height);
+}
+
 QWidget.setLayout[T](w: self ref QWidget, layout: T)
     for { T => _get_proxy: fn(w: self T): string; }
 {
     QWidget._setLayout(w, layout);
+}
+
+QWidget.setMouseTracking(w: self ref QWidget, enable: int)
+{
+    QWidget._setMouseTracking(w, enable);
 }
 
 QWidget.setWindowTitle(w: self ref QWidget, title: string)
