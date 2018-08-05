@@ -11,7 +11,7 @@
 
 # Tests an integration bridge between Limbo and Qt.
 
-implement Layouts;
+implement Canvas;
 
 # Import modules to be used and declare any instances that will be accessed
 # globally.
@@ -33,7 +33,7 @@ include "qtwidgets.m";
     QPen, QVBoxLayout, QWheelEvent, QWidget: import qt;
     filter_event, forget: import qt;
 
-Layouts: module
+Canvas: module
 {
     init: fn(ctxt: ref Draw->Context, args: list of string);
 };

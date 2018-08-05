@@ -216,6 +216,11 @@ QAction.setShortcut(w: self ref QAction, keys: string)
     call(w.proxy, "setShortcut", enc_str(keys)::nil);
 }
 
+QApplication._get_proxy(a: self ref QApplication): string
+{
+    return a.proxy;
+}
+
 QApplication.new(): ref QApplication
 {
     proxy := dec_str(call_static_keep("QApplication", "instance", nil));
@@ -715,6 +720,30 @@ QMainWindow.setWindowTitle(w: self ref QMainWindow, title: string)
 QMainWindow.show(w: self ref QMainWindow)
 {
     call(w.proxy, "show", nil);
+}
+
+QMdiArea._get_proxy(w: self ref QMdiArea): string
+{
+    return w.proxy;
+}
+
+QMdiArea.new(): ref QMdiArea
+{
+    proxy := create("QMdiArea", nil);
+    return ref QMdiArea(proxy);
+}
+
+QMdiArea.addSubWindow[T](w: self ref QMdiArea, widget: T, flags: int): ref QMdiSubWindow
+    for { T => _get_proxy: fn(w: self T): string; }
+{
+    proxy := dec_str(call_keep(w.proxy, "addSubWindow",
+        enc_inst(widget)::enc_enum("WindowFlags", flags)::nil));
+    return ref QMdiSubWindow(proxy);
+}
+
+QMdiSubWindow._get_proxy(w: self ref QMdiSubWindow): string
+{
+    return w.proxy;
 }
 
 QMenu.addAction(w: self ref QMenu, text: string): ref QAction

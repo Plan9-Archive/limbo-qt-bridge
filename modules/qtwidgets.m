@@ -43,6 +43,9 @@ QtWidgets: module
         AlignLeft, AlignRight, AlignHCenter, AlignJustify, AlignAbsolute: con (1 << iota);
         AlignCenter: con 16r84;
         AlignTop, AlignBottom, AlignVCenter, AlignBaseline: con (16r20 << iota);
+
+        Widget, Window: con iota;
+        Dialog, Sheet, Drawer, Popup, Tool, ToolTip, SplashScreen, Desktop, SubWindow: con ((iota + 1) * 2);
     };
 
     QAction: adt {
@@ -54,6 +57,7 @@ QtWidgets: module
 
     QApplication: adt {
         proxy: string;
+        _get_proxy: fn(a: self ref QApplication): string;
 
         new: fn(): ref QApplication;
         quit: fn(w: self ref QApplication);
@@ -251,6 +255,20 @@ QtWidgets: module
             for { T => _get_proxy: fn(w: self T): string; };
         setWindowTitle: fn(w: self ref QMainWindow, title: string);
         show: fn(w: self ref QMainWindow);
+    };
+
+    QMdiArea: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QMdiArea): string;
+
+        new: fn(): ref QMdiArea;
+        addSubWindow: fn[T](w: self ref QMdiArea, widget: T, flags: int): ref QMdiSubWindow
+            for { T => _get_proxy: fn(w: self T): string; };
+    };
+
+    QMdiSubWindow: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QMdiSubWindow): string;
     };
 
     QMenu: adt {
