@@ -55,8 +55,8 @@ Window: adt {
     x, y: int;
 
     new: fn(): ref Window;
-    mouseMove: fn(proxy: string);
-    mousePress: fn(proxy: string);
+    mouseMove: fn(w: self ref Window, ch: chan of string);
+    mousePress: fn(w: self ref Window, ch: chan of string);
 };
 
 window: ref Window;
@@ -82,51 +82,63 @@ Window.new(): ref Window
     pixmap := QPixmap.new(800, 600);
     lock := chan[1] of int;
 
-    window := Window(label, pixmap, lock, 0, 0);
+    window := ref Window(label, pixmap, lock, 0, 0);
     pixmap.fill(QColor(255,255,255,255));
 
-    filter_event(label, QMouseEvent.Press, Window.mousePress);
-    filter_event(label, QMouseEvent.Move, Window.mouseMove);
+    spawn window.mousePress(filter_event(label, QMouseEvent.Press));
+    spawn window.mouseMove(filter_event(label, QMouseEvent.Move));
 
     QWidget._setFixedSize(label, 800, 600);
     label.setPixmap(pixmap);
     label.setWindowTitle("Scribble");
     label.show();
 
-    return ref window;
+    return window;
 }
 
-Window.mousePress(proxy: string)
+Window.mousePress(w: self ref Window, ch: chan of string)
 {
-    event := ref QMouseEvent(proxy);
-    x := event.x();
-    y := event.y();
+    for (;;) {
+        proxy := <- ch;
+        event := ref QMouseEvent(proxy);
+        x := event.x();
+        y := event.y();
 
-    window.lock <-= 1;
-    window.x = x;
-    window.y = y;
-    <- window.lock;
+        window.lock <-= 1;
+        window.x = x;
+        window.y = y;
+        <- window.lock;
+
+        event.accept();
+        forget(event);
+    }
 }
 
-Window.mouseMove(proxy: string)
+Window.mouseMove(w: self ref Window, ch: chan of string)
 {
-    event := ref QMouseEvent(proxy);
-    x := event.x();
-    y := event.y();
-    pixmap := window.pixmap;
+    for (;;) {
+        proxy := <- ch;
+        event := ref QMouseEvent(proxy);
+        x := event.x();
+        y := event.y();
+        pixmap := window.pixmap;
 
-    painter := QPainter.new();
-    painter.begin(pixmap);
-    painter.setRenderHint(QPainter.Antialiasing);
+        painter := QPainter.new();
+        painter.begin(pixmap);
+        painter.setRenderHint(QPainter.Antialiasing);
 
-    painter.setPen(QPen(QColor(0, 0, 255, 255), 2));
+        painter.setPen(QPen(QColor(0, 0, 255, 255), 2));
 
-    window.lock <-= 1;
-    painter.drawLine(window.x, window.y, x, y);
-    window.x = x;
-    window.y = y;
-    <- window.lock;
+        window.lock <-= 1;
+        painter.drawLine(window.x, window.y, x, y);
+        window.x = x;
+        window.y = y;
+        <- window.lock;
 
-    painter.end();
-    window.label.setPixmap(pixmap);
+        painter.end();
+        window.label.setPixmap(pixmap);
+
+        event.accept();
+        forget(event);
+    }
 }

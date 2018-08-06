@@ -22,9 +22,6 @@ include "sys.m";
     sys: Sys;
     fprint, print, sprint: import sys;
 
-include "rand.m";
-    rand: Rand;
-
 include "qtwidgets.m";
     qt: QtWidgets;
     QAction, QApplication, QMainWindow, QMdiArea, QMdiSubWindow: import qt;
@@ -41,9 +38,7 @@ workspace: ref QMdiArea;
 
 init(ctxt: ref Draw->Context, args: list of string)
 {
-    # Load instances of modules, one local to init, the other global.
     sys = load Sys Sys->PATH;
-    rand = load Rand Rand->PATH;
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
@@ -61,7 +56,7 @@ init(ctxt: ref Draw->Context, args: list of string)
 
     windowsMenu := menuBar.addMenu("&Windows");
     newWindowAction := windowsMenu.addAction("&New");
-    connect(newWindowAction, "triggered", newWindow);
+    spawn newWindow(connect(newWindowAction, "triggered"));
 
     window.setCentralWidget(workspace);
 
@@ -70,12 +65,17 @@ init(ctxt: ref Draw->Context, args: list of string)
     window.show();
 }
 
-newWindow(args: list of string)
+newWindow(ch: chan of list of string)
 {
-    editor := QTextEdit.new();
-    subWindow := workspace.addSubWindow(editor, Qt.Window);
-    QWidget._show(subWindow);
+    for (;;) {
+        # Discard the signal arguments.
+        <- ch;
 
-    forget(subWindow);
-    forget(editor);
+        editor := QTextEdit.new();
+        subWindow := workspace.addSubWindow(editor, Qt.Window);
+        QWidget._show(subWindow);
+
+        forget(subWindow);
+        forget(editor);
+    }
 }

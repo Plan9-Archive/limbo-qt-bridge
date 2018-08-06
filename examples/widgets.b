@@ -28,7 +28,7 @@ include "string.m";
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QAction, QFileDialog, QMainWindow, QMenu, QMenuBar: import qt;
-    QTextEdit, connect, Invokable: import qt;
+    QTextEdit, connect, Invokable, qdebug: import qt;
 
 Widgets: module
 {
@@ -43,7 +43,6 @@ editor : ref QTextEdit;
 
 init(ctxt: ref Draw->Context, args: list of string)
 {
-    # Load instances of modules, one local to init, the other global.
     sys = load Sys Sys->PATH;
     str = load String String->PATH;
     qt = load QtWidgets QtWidgets->PATH;
@@ -59,8 +58,9 @@ init(ctxt: ref Draw->Context, args: list of string)
     openAction.setShortcut("Ctrl+O");
     exitAction := menu.addAction("E&xit");
     exitAction.setShortcut("Ctrl+Q");
-    connect(openAction, "triggered", handle_open);
-    connect(exitAction, "triggered", handle_exit);
+
+    spawn handle_open(connect(openAction, "triggered"));
+    spawn handle_exit(connect(exitAction, "triggered"));
 
     editor = QTextEdit.new();
     window.setCentralWidget(editor);
@@ -77,33 +77,40 @@ init(ctxt: ref Draw->Context, args: list of string)
     }
 }
 
-handle_exit(args: list of string)
+handle_exit(ch: chan of list of string)
 {
+    <- ch;
     window.close();
 }
 
-handle_open(args: list of string)
+handle_open(ch: chan of list of string)
 {
-    (file_name, filter) := QFileDialog.getOpenFileName(
-        window, "Open File", "", "*.txt");
+    for (;;) {
+        # Discard the signal arguments.
+        <- ch;
+        qdebug("in handle_open");
 
-    if (file_name == nil)
-        return;
+        (file_name, filter) := QFileDialog.getOpenFileName(
+            window, "Open File", "", "*.txt");
 
-    (nil, file_name) = str->splitstrr(file_name, "/");
+        if (file_name == nil)
+            continue;
 
-    f := sys->open(file_name, sys->OREAD);
-    if (f == nil)
-        return;
+        (nil, file_name) = str->splitstrr(file_name, "/");
 
-    s := "";
-    b := array[1024] of byte;
-    n : int;
-    do {
-        n = sys->readn(f, b, 1024);
-        s += string b[:n];
-    } while (n > 0);
+        f := sys->open(file_name, sys->OREAD);
+        if (f == nil)
+            continue;
 
-    editor.setText(s);
-    window.setWindowTitle(file_name + " - Limbo to Qt Bridge Demonstration");
+        s := "";
+        b := array[1024] of byte;
+        n : int;
+        do {
+            n = sys->readn(f, b, 1024);
+            s += string b[:n];
+        } while (n > 0);
+
+        editor.setText(s);
+        window.setWindowTitle(file_name + " - Limbo to Qt Bridge Demonstration");
+    }
 }

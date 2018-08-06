@@ -1,9 +1,6 @@
 # console.b
 #
 # Written in 2018 by David Boddie <david@boddie.org.uk>
-# The circlept and timer functions, and parts of the drawClock function were
-# originally part of Inferno's appl/wm/clock.b file which is subject to the
-# Lucent Public License 1.02.
 #
 # To the extent possible under law, the author(s) have dedicated all copyright
 # and related and neighboring rights to this software to the public domain
@@ -32,9 +29,13 @@ include "sh.m";
     sh: Sh;
     Context, Listnode: import sh;
 
+include "diskblocks.m";
+    diskblocks: Diskblocks;
+
 include "qtwidgets.m";
     qt: QtWidgets;
     QApplication, QLineEdit, QTextEdit, QVBoxLayout, QWidget, connect: import qt;
+    qdebug: import qt;
 
 Console: module
 {
@@ -51,10 +52,11 @@ init(ctxt: ref Draw->Context, args: list of string)
     sys = load Sys Sys->PATH;
     str = load String String->PATH;
     sh = load Sh Sh->PATH;
+    diskblocks = load Diskblocks Diskblocks->PATH;
     qt = load QtWidgets QtWidgets->PATH;
 
     drawctx = ctxt;
-
+    diskblocks->init();
     qt->init();
     app := QApplication.new();
 
@@ -64,7 +66,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     inputEdit = QLineEdit.new();
     QWidget._setFocusProxy(outputEdit, inputEdit);
 
-    connect(inputEdit, "returnPressed", handleInput);
+    spawn handleInput(connect(inputEdit, "returnPressed"));
 
     layout := QVBoxLayout.new();
     layout.setContentsMargins(0, 0, 0, 0);
@@ -77,11 +79,43 @@ init(ctxt: ref Draw->Context, args: list of string)
     window.show();
 }
 
-handleInput(args: list of string)
+handleInput(ch: chan of list of string)
 {
-    text := inputEdit.text();
-    outputEdit.append(text);
-    inputEdit.clear();
+    for (;;) {
+        # Discard the signal arguments.
+        <- ch;
 
-    outputEdit.append(sh->system(drawctx, text));
+        text := inputEdit.text();
+        outputEdit.append(text);
+        inputEdit.clear();
+
+        #temp := diskblocks->tempfile();
+        temp := sys->open("/tmp/wdir/appname", sys->OREAD);
+        f1 := sys->dup(sys->fildes(1).fd, temp.fd);
+        qdebug(sprint("%d\n", f1));
+
+        ch := chan of int;
+        spawn runCommand(text, ch, f1);
+
+        a := array[256] of byte;
+        output := "";
+
+        for (;;) {
+            n := sys->read(temp, a, 256);
+            qdebug(sprint("%d\n", n));
+            if (n <= 0)
+                break;
+            output += string a[:n];
+        }
+
+        outputEdit.append(output);
+    }
+}
+
+runCommand(text: string, ch: chan of int, f1: int)
+{
+    sys->pctl(sys->NEWFD, list of {f1});
+
+    sh->system(drawctx, text);
+    ch <-= 1;
 }

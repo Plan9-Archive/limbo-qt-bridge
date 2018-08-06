@@ -1,4 +1,4 @@
-# resizeevents.b
+# timer.b
 #
 # Written in 2018 by David Boddie <david@boddie.org.uk>
 #
@@ -11,58 +11,53 @@
 
 # Tests an integration bridge between Limbo and Qt.
 
-implement ResizeEvents;
+implement Timer;
 
 # Import modules to be used and declare any instances that will be accessed
 # globally.
+
+include "draw.m";
 
 include "sys.m";
     sys: Sys;
     fprint, print, sprint: import sys;
 
-include "draw.m";
-
 include "qtwidgets.m";
     qt: QtWidgets;
-    QApplication, QColor, QLabel, QResizeEvent, filter_event, forget: import qt;
+    QApplication, QLabel, QTimer: import qt;
+    connect, forget: import qt;
 
-ResizeEvents: module
+Timer: module
 {
     init: fn(ctxt: ref Draw->Context, args: list of string);
 };
 
-window: ref QLabel;
-
-# Main function and stream handling functions
-
 init(ctxt: ref Draw->Context, args: list of string)
 {
-    # Load instances of modules, one local to init, the other global.
     sys = load Sys Sys->PATH;
     qt = load QtWidgets QtWidgets->PATH;
 
     qt->init();
     app := QApplication.new();
 
-    window = QLabel.new();
+    label := QLabel.new();
+    timer := QTimer.new();
+    spawn time_out(connect(timer, "timeout"), label);
+    timer.start(1000);
 
-    spawn resizeEvent(filter_event(window, QResizeEvent.Type));
-
-    window.setWindowTitle("Limbo to Qt Bridge Paint Events Demonstration");
-    window.resize(400, 400);
-    window.show();
+    label.setText("Limbo to Qt Bridge Timer Demonstration");
+    label.show();
 }
 
-resizeEvent(ch: chan of string)
+time_out(ch: chan of list of string, label: ref QLabel)
 {
+    i := 0;
+
     for (;;) {
-        proxy := <- ch;
-        event := ref QResizeEvent(proxy);
-        (w, h) := event.size();
+        # Discard the signal arguments.
+        <- ch;
 
-        window.setText(sprint("%dx%d", w, h));
-
-        event.accept();
-        forget(event);
+        label.setText(string i);
+        i++;
     }
 }

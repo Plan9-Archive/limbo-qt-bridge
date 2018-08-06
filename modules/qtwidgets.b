@@ -117,7 +117,7 @@ call_value(proxy, method: string, args: list of string, unpack_names: list of st
 
 # Signal-slot connection and dispatch
 
-connect[T](src: T, signal: string, slot: Invokable)
+connect[T](src: T, signal: string): chan of list of string
     for { T => _get_proxy: fn(w: self T): string; }
 {
     # Obtain a channel to use to receive a response.
@@ -133,16 +133,21 @@ connect[T](src: T, signal: string, slot: Invokable)
     # will be to receive a signal.
     value := <- response_ch;
 
-    spawn signal_dispatcher(id_, response_ch, slot);
+    # Create a channel that the slot uses to receive signals.
+    slot_ch := chan of list of string;
+
+    spawn signal_dispatcher(id_, response_ch, slot_ch);
+
+    return slot_ch;
 }
 
-signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
+signal_dispatcher(id_: int, signal_ch: chan of string, slot_ch: chan of list of string)
 {
     for (;;) alt {
         s := <- signal_ch =>
 
             args := parse_args(s);
-            slot(args);
+            slot_ch <-= args;
 
             # Inform Qt that the signal has been processed. This is similar to
             # how the event dispatcher tidies up after calling an event handler.
@@ -151,6 +156,13 @@ signal_dispatcher(id_: int, signal_ch: chan of string, slot: Invokable)
             message := enc_str("process") + enc_int(id_);
             message[len message - 1] = '\n';
             channels.write_ch <-= message;
+
+            # Although we send the process message almost immediately after
+            # dispatching the arguments to the slot, the reader won't block
+            # when trying to send the next signal here because synchronisation
+            # occurs at the point where arguments are sent to the slot. So a
+            # pending signal will still have to wait for the slot to finish but
+            # any communication the slot does will still get through.
     }
 }
 
@@ -167,7 +179,7 @@ rconnect[T,U](src: T, signal: string, dest: U, slot: string)
 
 # Event filter creation and dispatch
 
-filter_event[T](src: T, event_type: int, handler: EventHandler)
+filter_event[T](src: T, event_type: int): chan of string
     for { T => _get_proxy: fn(w: self T): string; }
 {
     # Obtain a channel to use to receive a response.
@@ -183,10 +195,15 @@ filter_event[T](src: T, event_type: int, handler: EventHandler)
     # will be to receive an event.
     value := <- response_ch;
 
-    spawn event_dispatcher(id_, response_ch, handler);
+    # Create a channel that the handler uses to receive events.
+    handler_ch := chan of string;
+
+    spawn event_dispatcher(id_, response_ch, handler_ch);
+
+    return handler_ch;
 }
 
-event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
+event_dispatcher(id_: int, event_ch, handler_ch: chan of string)
 {
     for (;;) alt {
         s := <- event_ch =>
@@ -197,10 +214,10 @@ event_dispatcher(id_: int, event_ch: chan of string, handler: EventHandler)
             # another event arrives while one is being processed, causing the
             # message reader to block because this qualifier is still active.
             proxy := dec_str(s);
-            handler(proxy);
-            # The forget request does not expect a response, so any pending
-            # event messages that arrive immediately will not block it.
-            forget_proxy(proxy);
+
+            # The handler is responsible for creating and forgetting an
+            # instance of the proxy.
+            handler_ch <-= proxy;
     }
 }
 
@@ -758,6 +775,21 @@ QMenuBar.addMenu(w: self ref QMenuBar, title: string): ref QMenu
     return ref QMenu(value);
 }
 
+QMouseEvent._get_proxy(w: self ref QMouseEvent): string
+{
+    return w.proxy;
+}
+
+QMouseEvent.accept(e: self ref QMouseEvent)
+{
+    call(e.proxy, "accept", nil);
+}
+
+QMouseEvent.ignore(e: self ref QMouseEvent)
+{
+    call(e.proxy, "ignore", nil);
+}
+
 QMouseEvent.button(e: self ref QMouseEvent): int
 {
     value := call(e.proxy, "button", nil);
@@ -888,6 +920,21 @@ QRadioButton.new(text: string): ref QRadioButton
     return ref QRadioButton(proxy);
 }
 
+QResizeEvent._get_proxy(w: self ref QResizeEvent): string
+{
+    return w.proxy;
+}
+
+QResizeEvent.accept(e: self ref QResizeEvent)
+{
+    call(e.proxy, "accept", nil);
+}
+
+QResizeEvent.ignore(e: self ref QResizeEvent)
+{
+    call(e.proxy, "ignore", nil);
+}
+
 QResizeEvent.oldSize(e: self ref QResizeEvent): (int, int)
 {
     value := call_value(e.proxy, "oldSize", nil, "width"::"height"::nil);
@@ -934,6 +981,27 @@ QTextEdit.setReadOnly(w: self ref QTextEdit, enable: int)
     call(w.proxy, "setReadOnly", enc_bool(enable)::nil);
 }
 
+QTimer._get_proxy(w: self ref QTimer): string
+{
+    return w.proxy;
+}
+
+QTimer.new(): ref QTimer
+{
+    proxy := create("QTimer", nil);
+    return ref QTimer(proxy);
+}
+
+QTimer.start(w: self ref QTimer, msec: int)
+{
+    call(w.proxy, "start", enc_int(msec)::nil);
+}
+
+QTimer.stop(w: self ref QTimer)
+{
+    call(w.proxy, "stop", nil);
+}
+
 QTransform._get_proxy(w: self ref QTransform): string
 {
     return w.proxy;
@@ -978,10 +1046,14 @@ QVBoxLayout.setSpacing(w: self ref QVBoxLayout, spacing: int)
     call(w.proxy, "setSpacing", enc_int(spacing)::nil);
 }
 
-QWheelEvent.buttons(e: self ref QWheelEvent): int
+QWheelEvent._get_proxy(w: self ref QWheelEvent): string
 {
-    value := call(e.proxy, "buttons", nil);
-    return dec_int(value);
+    return w.proxy;
+}
+
+QWheelEvent.accept(e: self ref QWheelEvent)
+{
+    call(e.proxy, "accept", nil);
 }
 
 QWheelEvent.angleDelta(e: self ref QWheelEvent): int
@@ -990,6 +1062,17 @@ QWheelEvent.angleDelta(e: self ref QWheelEvent): int
     value := call_value(e.proxy, "angleDelta", nil, "x"::"y"::nil);
     (x, y) := parse_2tuple(value);
     return int y;
+}
+
+QWheelEvent.buttons(e: self ref QWheelEvent): int
+{
+    value := call(e.proxy, "buttons", nil);
+    return dec_int(value);
+}
+
+QWheelEvent.ignore(e: self ref QWheelEvent)
+{
+    call(e.proxy, "ignore", nil);
 }
 
 QWheelEvent.x(e: self ref QWheelEvent): int

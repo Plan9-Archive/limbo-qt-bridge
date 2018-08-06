@@ -60,7 +60,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     view.setSceneRect(-400.0, -300.0, 800.0, 600.0);
     view.setRenderHint(QPainter.Antialiasing);
 
-    filter_event(view.viewport(), QWheelEvent.Type, scaleView);
+    spawn scaleView(filter_event(view.viewport(), QWheelEvent.Type));
 
     layout := QVBoxLayout.new();
     layout.setContentsMargins(0, 0, 0, 0);
@@ -138,15 +138,21 @@ addTexts(scene: ref QGraphicsScene, width, height: int, delay: int)
     }
 }
 
-scaleView(proxy: string)
+scaleView(ch: chan of string)
 {
-    event := ref QWheelEvent(proxy);
-    step := event.angleDelta()/120;
+    for (;;) {
+        proxy := <- ch;
+        event := ref QWheelEvent(proxy);
+        step := event.angleDelta()/120;
 
-    if (step > 0)
-        view.scale(1.25, 1.25);
-    else if (step < 0)
-        view.scale(0.8, 0.8);
+        if (step > 0)
+            view.scale(1.25, 1.25);
+        else if (step < 0)
+            view.scale(0.8, 0.8);
+
+        event.accept();
+        forget(event);
+    }
 }
 
 randreal(size: int): real

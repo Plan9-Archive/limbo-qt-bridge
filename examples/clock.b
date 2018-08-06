@@ -68,7 +68,7 @@ init(ctxt: ref Draw->Context, args: list of string)
     window = QLabel.new();
     pixmap = QPixmap.new(100, 100);
 
-    filter_event(window, QResizeEvent.Type, resizeEvent);
+    spawn resizeEvent(filter_event(window, QResizeEvent.Type));
 
     window.resize(100, 100);
     window.setWindowTitle("Clock");
@@ -89,21 +89,27 @@ init(ctxt: ref Draw->Context, args: list of string)
     }
 }
 
-resizeEvent(proxy: string)
+resizeEvent(ch: chan of string)
 {
-    event := ref QResizeEvent(proxy);
-    (w, h) := event.size();
-    (pw, ph) := pixmap.size();
+    for (;;) {
+        proxy := <- ch;
+        event := ref QResizeEvent(proxy);
+        (w, h) := event.size();
+        (pw, ph) := pixmap.size();
 
-    if (w != pw || h != ph) {
-        # Acquire the lock in order to destroy the pixmap.
-        lock <-= 1;
-        forget(pixmap);
-        pixmap = QPixmap.new(w, h);
-        <- lock;
+        if (w != pw || h != ph) {
+            # Acquire the lock in order to destroy the pixmap.
+            lock <-= 1;
+            forget(pixmap);
+            pixmap = QPixmap.new(w, h);
+            <- lock;
+        }
+
+        drawClock(daytime->now());
+
+        event.accept();
+        forget(event);
     }
-
-    drawClock(daytime->now());
 }
 
 drawClock(t: int)

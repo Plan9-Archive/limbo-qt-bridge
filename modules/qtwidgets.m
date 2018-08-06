@@ -29,14 +29,14 @@ QtWidgets: module
     forget: fn[T](obj: T)
         for { T => _get_proxy: fn(w: self T): string; };
 
-    connect: fn[T](src: T, signal: string, slot: Invokable)
+    connect: fn[T](src: T, signal: string): chan of list of string
         for { T => _get_proxy: fn(w: self T): string; };
 
     rconnect: fn[T,U](src: T, signal: string, dest: U, slot: string)
         for { T => _get_proxy: fn(w: self T): string;
               U => _get_proxy: fn(w: self U): string; };
 
-    filter_event: fn[T](src: T, event_type: int, handler: EventHandler)
+    filter_event: fn[T](src: T, event_type: int): chan of string
         for { T => _get_proxy: fn(w: self T): string; };
 
     Qt: adt {
@@ -285,11 +285,15 @@ QtWidgets: module
 
     QMouseEvent: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QMouseEvent): string;
+
         Press: con 2;
         Release: con 3;
         Move: con 5;
 
+        accept: fn(e: self ref QMouseEvent);
         button: fn(e: self ref QMouseEvent): int;
+        ignore: fn(e: self ref QMouseEvent);
         x: fn(e: self ref QMouseEvent): int;
         y: fn(e: self ref QMouseEvent): int;
         type_: fn(e: self ref QMouseEvent): int;
@@ -344,8 +348,11 @@ QtWidgets: module
 
     QResizeEvent: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QResizeEvent): string;
         Type: con 14;
 
+        accept: fn(e: self ref QResizeEvent);
+        ignore: fn(e: self ref QResizeEvent);
         oldSize: fn(e: self ref QResizeEvent): (int, int);
         size: fn(e: self ref QResizeEvent): (int, int);
     };
@@ -359,6 +366,15 @@ QtWidgets: module
         isReadOnly: fn(w: self ref QTextEdit): int;
         setText: fn(w: self ref QTextEdit, text: string);
         setReadOnly: fn(w: self ref QTextEdit, enable: int);
+    };
+
+    QTimer: adt {
+        proxy: string;
+        _get_proxy: fn(w: self ref QTimer): string;
+
+        new: fn(): ref QTimer;
+        start: fn(w: self ref QTimer, msec: int);
+        stop: fn(w: self ref QTimer);
     };
 
     QTransform: adt {
@@ -383,10 +399,13 @@ QtWidgets: module
 
     QWheelEvent: adt {
         proxy: string;
+        _get_proxy: fn(w: self ref QWheelEvent): string;
         Type: con 31;
 
-        buttons: fn(e: self ref QWheelEvent): int;
+        accept: fn(e: self ref QWheelEvent);
         angleDelta: fn(e: self ref QWheelEvent): int;
+        buttons: fn(e: self ref QWheelEvent): int;
+        ignore: fn(e: self ref QWheelEvent);
         x: fn(e: self ref QWheelEvent): int;
         y: fn(e: self ref QWheelEvent): int;
     };
